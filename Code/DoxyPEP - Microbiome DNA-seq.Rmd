@@ -71,8 +71,6 @@ read.csv(idseq_sample_overviews_path, stringsAsFactors=F) %>%
 
 metadata<-read.csv("../Inputs/Microbiome/samples_w_ptid2.csv", header=TRUE)
 
-ptid<-read.csv("../Inputs/Microbiome/ptid_061423.csv", header=TRUE)
-
 ddsdp = readRDS("../Inputs/Microbiome/DNA/dds_object_doxy_genus.rds")
 
 reports_filterbg_padj <- read.csv("../Inputs/Microbiome/DNA/microbiome_reports.csv", header=TRUE)

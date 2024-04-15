@@ -74,7 +74,8 @@ read.csv(idseq_sample_overviews_path, stringsAsFactors=F) %>%
 metadata<-read.csv("../Inputs/final_sample_0116.csv", header=TRUE)
 meta <-metadata %>% filter(seq=="RNA")
 
-ptid<-read.csv("../Inputs/Microbiome/ptid_061423.csv", header=TRUE)
+
+ptid<-read.csv("../Inputs/Microbiome/samples_w_ptid2.csv", header=TRUE)
 
 reports_filterbg_padj <- read.csv("../Inputs/Microbiome/RNA/microbiome_reports.csv", header=TRUE)
 

@@ -68,8 +68,7 @@ read.csv(idseq_sample_overviews_path, stringsAsFactors=F) %>%
     control=dplyr::case_when(
       water_control=="Yes" ~ TRUE,
       grepl("hela", sample_name, ignore.case=T) ~ TRUE,
-      TRUE ~ FALSE)) %>%
-  dplyr::inner_join(read.csv(ngs_samples_path, stringsAsFactors=F)) -> sample_overviews
+      TRUE ~ FALSE)) -> sample_overviews
 
 metadata<-read.csv("../Inputs/final_sample_0116.csv", header=TRUE)
 meta <-metadata %>% filter(seq=="RNA")

@@ -58,7 +58,6 @@ theme_set(theme_mine())
 ```{r set paths and read data}
 
 idseq_sample_overviews_path = "../Inputs/Microbiome/DNA/sample_overviews_combined.csv"
-ngs_samples_path = "../Inputs/Microbiome/DNA/ngs_samples_combined.csv"
 
 ### sequencing data ###
 read.csv(idseq_sample_overviews_path, stringsAsFactors=F) %>%
@@ -66,8 +65,7 @@ read.csv(idseq_sample_overviews_path, stringsAsFactors=F) %>%
     control=dplyr::case_when(
       water_control=="Yes" ~ TRUE,
       grepl("hela", sample_name, ignore.case=T) ~ TRUE,
-      TRUE ~ FALSE)) %>%
-  dplyr::inner_join(read.csv(ngs_samples_path, stringsAsFactors=F)) -> sample_overviews
+      TRUE ~ FALSE)) -> sample_overviews
 
 metadata<-read.csv("../Inputs/Microbiome/samples_w_ptid2.csv", header=TRUE)
 

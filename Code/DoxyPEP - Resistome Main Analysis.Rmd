@@ -75,7 +75,6 @@ amr <- read.csv("../Inputs/Resistome/final_AMR_0116.csv") %>%
 DNA_amr <- amr %>% filter(seq=="DNA")
 RNA_amr <- amr %>% filter(seq=="RNA")
 
-## if bact_mass==Inf, then = 0
 
 # sample-level dataset
 samples <- read.csv("../Inputs/final_sample_0116.csv") %>%
@@ -177,10 +176,8 @@ RNA_paired <- RNA_samples %>% filter(paired=="Y") %>%
 ```{r absolute AMR mass by visitcode dataset}
 
 samples_mass <- samples %>%
-  select(sample_name, arm, visitcode, seq, sum_AMR_mass, bact_mass, bact_reads, total_ercc_reads, total_reads) %>%
-  pivot_longer(cols=c("bact_mass", "sum_AMR_mass") , names_to = "mass_type", values_to = "mass") %>%
-  mutate(mass_type = case_when(mass_type=="bact_mass" ~ "Bacterial mass (pg)",
-                               mass_type=="sum_AMR_mass" ~ "AMR gene mass (pg)")) %>% 
+  select(sample_name, arm, visitcode, seq, sum_AMR_mass, total_ercc_reads, total_reads) %>%
+  pivot_longer(cols="sum_AMR_mass" , names_to = "mass_type", values_to = "mass") %>%
   mutate(across(mass, ~ ifelse(is.na(.), 0, .)))
 
 DNA_samples_mass <- samples_mass %>% filter(seq=="DNA")
@@ -207,9 +204,7 @@ stat.test_byvisit <- DNA_samples_mass %>%
                           visitcode=="Month 6" ~ 1.8),
          xmax = case_when(visitcode=="Day 0" ~ 1.2,
                           visitcode=="Month 6" ~ 2.2),
-         y.position = case_when(mass_type=="Bacterial mass (pg)" ~ 6,
-                                mass_type=="AMR gene mass (pg)" ~ 2.75)) %>%
-  filter(mass_type == "AMR gene mass (pg)")
+         y.position = 2.75)
 
 stat.test_byarm <- DNA_samples_mass %>%
   mutate(visitcode=as.character(visitcode)) %>%
@@ -220,11 +215,8 @@ stat.test_byarm <- DNA_samples_mass %>%
                           arm=="DP" ~ 1.2),
          xmax = case_when(arm=="SOC" ~ 1.8,
                           arm=="DP" ~ 2.2),
-         y.position = case_when(arm=="SOC" & mass_type == "Bacterial mass (pg)" ~ 2,
-                                arm=="DP" & mass_type == "Bacterial mass (pg)" ~ 1,
-                                arm=="SOC" & mass_type == "AMR gene mass (pg)" ~ 3.2,
-                                arm=="DP" & mass_type == "AMR gene mass (pg)" ~ 3.8)) %>%
-  filter(mass_type == "AMR gene mass (pg)")
+         y.position = case_when(arm=="SOC" ~ 2.2,
+                                arm=="DP" ~ 3.3))
 
 stat.test <- stat.test_byvisit %>% bind_rows(stat.test_byarm) %>%
   adjust_pvalue(method = "fdr") %>%
@@ -233,7 +225,7 @@ stat.test <- stat.test_byvisit %>% bind_rows(stat.test_byarm) %>%
                             TRUE ~ paste("p.adj =", as.character(format(round(p.adj, digits=2), nsmall = 2)))))
   
   
-mass_visit <- ggplot(DNA_samples_mass %>% filter(mass_type=="AMR gene mass (pg)") %>%
+mass_visit <- ggplot(DNA_samples_mass %>%
                                    mutate(arm = case_when(arm=="SOC" ~ "Standard of care",
                                                           arm=="DP" ~ "Doxy-PEP")) %>%
                                    mutate(arm = factor(arm, levels=c("Standard of care","Doxy-PEP"))),

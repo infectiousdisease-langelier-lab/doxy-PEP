@@ -61,7 +61,6 @@ theme_set(theme_mine())
 
 idseq_sample_overviews_path = "../Inputs/Microbiome/RNA/sample_overviews_rna.csv"
 ngs_samples_path = "../Inputs/Microbiome/RNA/ngs_samples_rna.csv"
-reports_path = "../Inputs/Microbiome/RNA/sample_taxon_reports_rna"
 
 ### sequencing data ###
 read.csv(idseq_sample_overviews_path, stringsAsFactors=F) %>%
@@ -75,69 +74,10 @@ read.csv(idseq_sample_overviews_path, stringsAsFactors=F) %>%
 metadata<-read.csv("../Inputs/final_sample_0116.csv", header=TRUE)
 meta <-metadata %>% filter(seq=="RNA")
 
-ptid<-read.csv("../Inputs/Microbiome/DNA/ptid_061423.csv", header=TRUE)
+ptid<-read.csv("../Inputs/Microbiome/ptid_061423.csv", header=TRUE)
 
-```
+reports_filterbg_padj <- read.csv("../Inputs/Microbiome/RNA/microbiome_reports.csv", header=TRUE)
 
-# DATA CLEANING
-
-``` {r build reports}
-# Make Genus & Species Reports #
-read_reports(reports_path, tax_level=2) %>%
-  dplyr::filter(sample_name %in% sample_overviews$sample_name) -> genus_reports
-
-read_reports(reports_path, tax_level=1) %>%
-  dplyr::filter(sample_name %in% sample_overviews$sample_name) -> species_reports
-
-read_reports(reports_path) %>%
-  dplyr::filter(sample_name %in% sample_overviews$sample_name) %>%
-  dplyr::mutate(genus_tax_id=dplyr::if_else(genus_tax_id < 0, tax_id, genus_tax_id)) %>%
-  dplyr::left_join(genus_reports %>%
-  dplyr::select(sample_name, tax_id, nt_count) %>%
-  dplyr::rename(genus_tax_id=tax_id, genus_nt_count=nt_count)) %>%
-  dplyr::mutate(genus_nt_count=dplyr::if_else(is.na(genus_nt_count),nt_count, genus_nt_count)) -> reports
-
-stopifnot(length(unique(reports$sample_name)) == nrow(sample_overviews))
-stopifnot(length(unique(genus_reports$sample_name)) == nrow(sample_overviews))
-
-```
-
-``` {r data cleaning}
-# extract sample_ID from full sample name #
-sample_overviews_batch <-sample_overviews %>%
-  mutate(sample_ID = sapply(strsplit(sample_name,"_"),"[[",2))
-```
-
-```{r batch correction}
-### Background correction ###
-controls <- with(sample_overviews, sample_name[control])
-
-ercc_norm <- sample_overviews$total_ercc_reads
-names(ercc_norm) <- sample_overviews$sample_name
-
-batches <- sample_overviews$sequencing_batch
-names(batches) <- sample_overviews$sample_name
-
-reports_filterbg <- filter_background(reports, controls,batches=batches,normalization=ercc_norm)
-
-### Adjust p values ###
-reports_filterbg_padj<-reports_filterbg %>%
-  dplyr::group_by(sample_name) %>%
-  dplyr::mutate(p_adj=p.adjust(p_val, method="fdr")) %>%
-  dplyr::ungroup() 
-
-```
-``` {r ercc}
-
-### ERCC calculations ###
-sample_overviews_ercc<-
-  for(i in 1:nrow(sample_overviews)){
-    ercc_counts<-sample_overviews[i,11]
-    total_counts<-sample_overviews[i,6]
-    ercc_input<-0.000000000025
-    sample_overviews[i,36]<-(ercc_input/(ercc_counts/total_counts))-ercc_input
-    sample_overviews[i,37]<-sample_overviews[i,36]*1000000000000
-  }
 
 ```
 
@@ -149,7 +89,7 @@ sample_overviews_ercc<-
 ```{r microbial load}
 
 ### wrangle data ###
-reports_2<-reports %>%
+reports_2<-reports_filterbg_padj %>%
   dplyr::filter(category=="bacteria")%>%
   dplyr::filter(!grepl("NTC|NEC|EMPTY|R213",sample_name)) %>%
   filter(toupper(sample_name)!="DOXYPEP_R148_C11_RECTAL_RNA_SEQ093_S51") %>% # duplicate sample with: DOXYPEP_R148_H21_RECTAL_RNA_SEQ093_S93 (keep)

@@ -27,6 +27,8 @@ rename <- dplyr::rename
 
 ```
 
+
+
 ```{r theme}
 theme_mine <-function(base_size=16,base_family=""){
   theme_bw(base_size,base_family=base_family) %+replace%
@@ -53,6 +55,7 @@ theme_mine <-function(base_size=16,base_family=""){
 theme_set(theme_mine())
 
 ```
+
 
 
 # IMPORTATION
@@ -84,7 +87,7 @@ reports_filterbg_padj <- read.csv("../Inputs/Microbiome/RNA/microbiome_reports.c
 # --------------------
 # RESULTS: SUPPLEMENTAL FIGURES
 
-## Supplemental Figure 5A: Microbial mass
+## Supplemental Figure 5B: Microbial mass
 
 ```{r microbial load}
 
@@ -129,6 +132,7 @@ stat.test <- stat.test_byvisit %>%
         as.character(format(round(p.adj,digits=2), nsmall =2)))))
 
 
+
 p<-ggplot(reports_6, aes(x=as.character(visitcode), y=norm_bacterial_mass2, color=arm)) +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
   geom_point(position = position_jitterdodge(0.3,0.2,0.6), alpha=0.6, size=4) +
@@ -138,12 +142,12 @@ p<-ggplot(reports_6, aes(x=as.character(visitcode), y=norm_bacterial_mass2, colo
   scale_y_log10(labels = trans_format("log10", math_format(10^.x)),
                 limits = c(1e-5,1e6)) +
   theme(legend.position = "top")
-
 p
+
 
 ```
 
-## Supplemental Figure 5B: Alpha diversity
+## Supplemental Figure 5D: Alpha diversity
 
 
 ``` {r alpha div}
@@ -218,7 +222,7 @@ p
 
 ```
 
-## Supplemental Figure 5C: Beta diversity
+## Supplemental Figure 5F: Beta diversity
 
 
 ```{r beta div}
@@ -273,6 +277,7 @@ NMDS_int<-ggplot(plot %>% mutate(arm=factor(arm, levels=c("SOC","DP"))),aes(NMDS
   annotate("text", x=2.5, y=-1.7, label=paste("PERMANOVA p-value 0.37"), hjust = 0, size=4) +
                 theme(legend.position="none")
 NMDS_int
+
 
 ```
 

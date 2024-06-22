@@ -1,10 +1,11 @@
 ---
 title: "DoxyPEP resistome analysis"
+author: "Victoria Chu"
 output: html_notebook
-date: April 12, 2024
-created by: Victoria Chu
+date: "May 27, 2024"
 ---
 
+# LIBRARIES
 
 ```{r libraries}
 
@@ -15,6 +16,7 @@ library(rstatix)
 library(ggpubr)
 library(vegan)
 library(scales)
+library(gamlss)
 
 ```
 
@@ -150,6 +152,52 @@ RNA_abx_class_list <- RNA_massperc_table %>%
 RNA_abx_class_list <- as.vector(RNA_abx_class_list$abx_class)
 
 ```
+## Dose analyses
+
+```{r dose analyses}
+
+
+DNA_doses <- DNA_samples %>% mutate(dose_cat = case_when(doxy_comb==0 ~ "0",
+                                                         doxy_comb<=25 & doxy_comb>0 ~ "1-25",
+                                                         doxy_comb>25 & doxy_comb<=50 ~ "26-50",
+                                                         doxy_comb>50 ~ ">50")) %>%
+  mutate(dose_cat = factor(dose_cat, levels=c("0","1-25","26-50",">50"))) %>%
+  mutate(dose_rank = case_when(dose_cat == "0" ~ 1,
+                               dose_cat == "1-25" ~ 2,
+                               dose_cat == "26-50" ~ 3,
+                               dose_cat == ">50" ~ 4))
+
+
+RNA_doses <- RNA_samples %>% mutate(dose_cat = case_when(doxy_comb==0 ~ "0",
+                                                         doxy_comb<=25 & doxy_comb>0 ~ "1-25",
+                                                         doxy_comb>25 & doxy_comb<=50 ~ "26-50",
+                                                         doxy_comb>50 ~ ">50")) %>%
+  mutate(dose_cat = factor(dose_cat, levels=c("0","1-25","26-50",">50"))) %>%
+  mutate(dose_rank = case_when(dose_cat == "0" ~ 1,
+                               dose_cat == "1-25" ~ 2,
+                               dose_cat == "26-50" ~ 3,
+                               dose_cat == ">50" ~ 4))
+
+
+lm_eqn <- function(df,outcome){
+  m <- lm(outcome ~ doxy_comb, df);
+  eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2,
+                   list(a = format(unname(coef(m)[1]), digits = 2),
+                        b = format(unname(coef(m)[2]), digits = 2),
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));
+}
+
+lm_pvalue <- function(df,outcome){
+  m <- lm(outcome ~ doxy_comb, df);
+  eq <- substitute(italic(p)~"="~pvalue,
+                   list(pvalue = formatC(summary(m)$coefficients[2,4], format = "e", digits = 1)))
+  as.character(as.expression(eq));
+}
+
+```
+
+
 
 ## Paired data structure
 
@@ -188,10 +236,191 @@ RNA_samples_mass <- samples_mass %>% filter(seq=="RNA")
 
 
 # --------------------
+# RESULTS: TABLES
+
+## Table 1A: Participants
+
+
+```{r supplemental table 1 demographics}
+
+# age
+DNA_metadata %>% group_by(arm) %>%
+  reframe(median = median(age), q1 = quantile(age,0.25), q3 = quantile(age,0.75), min = min(age), max = max(age))
+DNA_metadata %>% reframe(median = median(age), q1 = quantile(age,0.25), q3 = quantile(age,0.75), min = min(age), max = max(age))
+wilcox.test(DNA_metadata[DNA_metadata$arm=="SOC",]$age, DNA_metadata[DNA_metadata$arm=="DP",]$age)
+
+RNA_metadata %>% group_by(arm) %>%
+  reframe(median = median(age), q1 = quantile(age,0.25), q3 = quantile(age,0.75), min = min(age), max = max(age))
+RNA_metadata %>% reframe(median = median(age), q1 = quantile(age,0.25), q3 = quantile(age,0.75), min = min(age), max = max(age))
+wilcox.test(RNA_metadata[RNA_metadata$arm=="SOC",]$age, RNA_metadata[RNA_metadata$arm=="DP",]$age)
+
+# race/eth
+DNA_metadata %>%
+  mutate(raceeth = factor(raceeth, levels=c("Non-Hispanic White", "Hispanic White", "Asian/Pacific Islander", "Black/African American", "Other/Multiracial", "Unknown"))) %>%
+  group_by(arm, raceeth) %>%
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+DNA_metadata %>%
+  mutate(raceeth = factor(raceeth, levels=c("Non-Hispanic White", "Hispanic White", "Asian/Pacific Islander", "Black/African American", "Other/Multiracial", "Unknown"))) %>%
+  group_by(raceeth) %>%
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+fisher.test(table(DNA_metadata$arm, DNA_metadata$raceeth))
+
+RNA_metadata %>%
+  mutate(raceeth = factor(raceeth, levels=c("Non-Hispanic White", "Hispanic White", "Asian/Pacific Islander", "Black/African American", "Other/Multiracial", "Unknown"))) %>%
+  group_by(arm, raceeth) %>%
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+RNA_metadata %>%
+  mutate(raceeth = factor(raceeth, levels=c("Non-Hispanic White", "Hispanic White", "Asian/Pacific Islander", "Black/African American", "Other/Multiracial", "Unknown"))) %>%
+  group_by(raceeth) %>%
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+fisher.test(table(RNA_metadata$arm, RNA_metadata$raceeth))
+
+# hivstatus: 1 is living with HIV
+DNA_metadata %>%
+  group_by(arm, hivstatus) %>%
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+DNA_metadata %>%
+  group_by(hivstatus) %>%
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+chisq.test(DNA_metadata_housed$arm, DNA_metadata_housed$hivstatus, correct=FALSE)
+
+RNA_metadata %>%
+  group_by(arm, hivstatus) %>%
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+RNA_metadata %>%
+  group_by(hivstatus) %>%
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+chisq.test(RNA_metadata_housed$arm, RNA_metadata_housed$hivstatus, correct=FALSE)
+
+# CD4 count for those living with HIV at enrollment
+DNA_metadata_hiv <- DNA_metadata %>% filter(hivstatus==1) %>% mutate(cd4_avail = case_when(is.na(cd4_avail) ~ 0,
+                                                                                           TRUE ~ cd4_avail))
+DNA_metadata_hiv %>% group_by(arm, cd4_avail) %>% 
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+fisher.test(table(DNA_metadata_hiv$arm, DNA_metadata_hiv$cd4_avail))
+
+DNA_metadata_hiv %>% filter(cd4_avail==1) %>% group_by(arm) %>%
+  reframe(median = median(cd4_d0), q1 = quantile(cd4_d0,0.25), q3 = quantile(cd4_d0,0.75))
+DNA_metadata_hiv %>% filter(cd4_avail==1) %>% reframe(median = median(cd4_d0), q1 = quantile(cd4_d0,0.25), q3 = quantile(cd4_d0,0.75))
+wilcox.test(DNA_metadata_hiv[DNA_metadata_hiv$arm=="SOC" & DNA_metadata_hiv$cd4_avail==1,]$cd4_d0,
+            DNA_metadata_hiv[DNA_metadata_hiv$arm=="DP" & DNA_metadata_hiv$cd4_avail==1,]$cd4_d0)
+
+RNA_metadata_hiv <- RNA_metadata %>% filter(hivstatus==1) %>% mutate(cd4_avail = case_when(is.na(cd4_avail) ~ 0,
+                                                                                           TRUE ~ cd4_avail))
+RNA_metadata_hiv %>% group_by(arm, cd4_avail) %>% 
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+fisher.test(table(RNA_metadata_hiv$arm, RNA_metadata_hiv$cd4_avail))
+
+RNA_metadata_hiv %>% filter(cd4_avail==1) %>% group_by(arm) %>%
+  reframe(median = median(cd4_d0), q1 = quantile(cd4_d0,0.25), q3 = quantile(cd4_d0,0.75))
+RNA_metadata_hiv %>% filter(cd4_avail==1) %>% reframe(median = median(cd4_d0), q1 = quantile(cd4_d0,0.25), q3 = quantile(cd4_d0,0.75))
+wilcox.test(RNA_metadata_hiv[RNA_metadata_hiv$arm=="SOC" & RNA_metadata_hiv$cd4_avail==1,]$cd4_d0,
+            RNA_metadata_hiv[RNA_metadata_hiv$arm=="DP" & RNA_metadata_hiv$cd4_avail==1,]$cd4_d0)
+
+
+```
+
+
+
+## Table 1B: Month 6
+
+```{r Month 6 sample demographics}
+
+# demographics for only participants with month 6 samples
+DNA_samples_M6 <- DNA_samples %>% filter(visitcode=="Month 6") %>% mutate(dose_cat = case_when(doxy_comb==0 ~ "0",
+                                                         doxy_comb<=25 & doxy_comb>0 ~ "1-25",
+                                                         doxy_comb>25 & doxy_comb<=50 ~ "26-50",
+                                                         doxy_comb>50 ~ ">50")) 
+
+RNA_samples_M6 <- RNA_samples %>% filter(visitcode=="Month 6") %>% mutate(dose_cat = case_when(doxy_comb==0 ~ "0",
+                                                         doxy_comb<=25 & doxy_comb>0 ~ "1-25",
+                                                         doxy_comb>25 & doxy_comb<=50 ~ "26-50",
+                                                         doxy_comb>50 ~ ">50")) 
+
+# number of samples
+DNA_samples_M6 %>% group_by(arm) %>% summarise(n=n())
+
+# doxy doses
+DNA_samples_M6 %>% group_by(arm) %>%
+  reframe(median = median(doxy_comb), q1 = quantile(doxy_comb,0.25), q3 = quantile(doxy_comb,0.75), min = min(doxy_comb), max = max(doxy_comb))
+wilcox.test(DNA_samples_M6[DNA_samples_M6$arm=="SOC",]$doxy_comb, DNA_samples_M6[DNA_samples_M6$arm=="DP",]$doxy_comb)
+
+DNA_samples_M6 %>%
+  group_by(arm,dose_cat) %>%
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+fisher.test(table(DNA_samples_M6$arm, DNA_samples_M6$dose_cat))
+
+
+RNA_samples_M6 %>% group_by(arm) %>%
+  reframe(median = median(doxy_comb), q1 = quantile(doxy_comb,0.25), q3 = quantile(doxy_comb,0.75), min = min(doxy_comb), max = max(doxy_comb))
+wilcox.test(RNA_samples_M6[RNA_samples_M6$arm=="SOC",]$doxy_comb, RNA_samples_M6[RNA_samples_M6$arm=="DP",]$doxy_comb)
+
+RNA_samples_M6 %>%
+  group_by(arm,dose_cat) %>%
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+fisher.test(table(RNA_samples_M6$arm, RNA_samples_M6$dose_cat))
+
+# DNA antibiotics
+DNA_samples_M6_abx <- DNA_samples_M6 %>% select(sample_name, ptid, arm, Quinolone:Azithromycin, -Tetracycline) %>%
+  mutate(abx = ifelse(rowSums(.[-c(1:3)])==0, 0, 1)) %>%
+  pivot_longer(names_to = "abx_class", values_to = "days", cols = Quinolone:Azithromycin) %>%
+  mutate(abx_yn = case_when(days==0 ~ 0,
+                            TRUE ~ 1))
+# received non-doxy abx?
+DNA_samples_M6_abx %>% select(sample_name, arm, abx) %>% distinct() %>%
+  group_by(arm, abx) %>% 
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+
+chisq.test(DNA_samples_M6_abx$arm, DNA_samples_M6_abx$abx, correct=FALSE)
+
+# received non-doxy abx by class
+DNA_samples_M6_abx %>% group_by(arm, abx_class, abx_yn) %>% 
+  summarise(n = n()) %>% mutate(Freq = n/sum(n)) %>%
+  filter(abx_yn==1) %>% select(-abx_yn)
+
+chisq.test(DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Cephalosporin",]$arm, DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Cephalosporin",]$abx_yn, correct=FALSE) # Cephalosporin
+fisher.test(table(DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Penicillin",]$arm, DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Penicillin",]$abx_yn)) # Penicillin
+fisher.test(table(DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Clindamycin",]$arm, DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Clindamycin",]$abx_yn)) # Clindamycin
+fisher.test(table(DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Azithromycin",]$arm, DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Azithromycin",]$abx_yn)) # Azithromycin
+fisher.test(table(DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Quinolone",]$arm, DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Quinolone",]$abx_yn)) # Quinolone
+fisher.test(table(DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Vancomycin",]$arm, DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Vancomycin",]$abx_yn)) # Vancomycin
+
+
+# RNA antibiotics
+
+RNA_samples_M6_abx <- RNA_samples_M6 %>% select(sample_name, ptid, arm, Quinolone:Azithromycin, -Tetracycline) %>%
+  mutate(abx = ifelse(rowSums(.[-c(1:3)])==0, 0, 1)) %>%
+  pivot_longer(names_to = "abx_class", values_to = "days", cols = Quinolone:Azithromycin) %>%
+  mutate(abx_yn = case_when(days==0 ~ 0,
+                            TRUE ~ 1))
+# received non-doxy abx?
+RNA_samples_M6_abx %>% select(sample_name, arm, abx) %>% distinct() %>%
+   group_by(arm, abx) %>% 
+  summarise(n = n()) %>% mutate(Freq = n/sum(n))
+
+chisq.test(RNA_samples_M6_abx$arm, RNA_samples_M6_abx$abx, correct=FALSE)
+
+# received non-doxy abx by class
+RNA_samples_M6_abx %>% group_by(arm, abx_class, abx_yn) %>% 
+  summarise(n = n()) %>% mutate(Freq = n/sum(n)) %>%
+  filter(abx_yn==1) %>% select(-abx_yn)
+
+chisq.test(RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Cephalosporin",]$arm, RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Cephalosporin",]$abx_yn, correct=FALSE) # Cephalosporin
+fisher.test(table(RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Penicillin",]$arm, RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Penicillin",]$abx_yn)) # Penicillin
+fisher.test(table(RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Clindamycin",]$arm, RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Clindamycin",]$abx_yn)) # Clindamycin
+fisher.test(table(RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Azithromycin",]$arm, RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Azithromycin",]$abx_yn)) # Azithromycin
+fisher.test(table(RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Quinolone",]$arm, RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Quinolone",]$abx_yn)) # Quinolone
+fisher.test(table(RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Vancomycin",]$arm, RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Vancomycin",]$abx_yn)) # Vancomycin
+
+```
+
+
+
+# --------------------
 # RESULTS: FIGURES
 
 
-## Figure 1A and B: Absolute AMR mass
+## Figure 2A and B: Absolute AMR mass
 
 ```{r DNA absolute AMR mass by visitcode}
 
@@ -231,7 +460,7 @@ mass_visit <- ggplot(DNA_samples_mass %>%
                                    mutate(arm = factor(arm, levels=c("Standard of care","Doxy-PEP"))),
        aes(x=as.character(visitcode), y=mass, color=arm)) +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
-  geom_point(position = position_jitterdodge(0.3,0.2,0.6), alpha=0.6, size=4) +
+  geom_point(position = position_jitterdodge(0.3,0,0.6), alpha=0.6, size=4) +
   geom_boxplot(alpha=0.5, outlier.shape=NA, fill=NA, width=0.6) +
   stat_pvalue_manual(stat.test,  label = "{p_char}", tip.length = 0, size=4, bracket.nudge.y = -2) +
   xlab("") + ylab("Normalized ARG mass per million reads (pg)\n") +
@@ -259,10 +488,7 @@ stat.test_byvisit <- RNA_samples_mass %>%
   mutate(xmin = case_when(visitcode=="Day 0" ~ 0.8,
                           visitcode=="Month 6" ~ 1.8),
          xmax = case_when(visitcode=="Day 0" ~ 1.2,
-                          visitcode=="Month 6" ~ 2.2),
-         y.position = case_when(mass_type=="Bacterial mass (pg)" ~ 5,
-                                mass_type=="AMR gene mass (pg)" ~ 0.1)) %>%
-  filter(mass_type == "AMR gene mass (pg)")
+                          visitcode=="Month 6" ~ 2.2))
 
 stat.test_byarm <- RNA_samples_mass %>%
   mutate(visitcode=as.character(visitcode)) %>%
@@ -273,11 +499,8 @@ stat.test_byarm <- RNA_samples_mass %>%
                           arm=="DP" ~ 1.2),
          xmax = case_when(arm=="SOC" ~ 1.8,
                           arm=="DP" ~ 2.2),
-         y.position = case_when(arm=="SOC" & mass_type == "Bacterial mass (pg)" ~ 0.1,
-                                arm=="DP" & mass_type == "Bacterial mass (pg)" ~ 1,
-                                arm=="SOC" & mass_type == "AMR gene mass (pg)" ~ 0.01,
-                                arm=="DP" & mass_type == "AMR gene mass (pg)" ~ 1)) %>%
-  filter(mass_type == "AMR gene mass (pg)")
+         y.position = case_when(arm=="DP" ~ 1,
+                                TRUE ~ y.position))
 
 stat.test <- stat.test_byvisit %>% bind_rows(stat.test_byarm) %>%
   adjust_pvalue(method = "fdr") %>%
@@ -285,18 +508,19 @@ stat.test <- stat.test_byvisit %>% bind_rows(stat.test_byarm) %>%
   mutate(p_char = case_when(p<0.1 ~ paste("p.adj =",format(p.adj, scientific = TRUE, digits = 2)),
                             TRUE ~ paste("p.adj =", as.character(format(round(p.adj, digits=2), nsmall = 2)))))
 
-mass_visit <- ggplot(RNA_samples_mass %>% filter(mass_type=="AMR gene mass (pg)") %>%
+mass_visit <- ggplot(RNA_samples_mass %>% 
                        mutate(arm = case_when(arm=="SOC" ~ "Standard of care",
                                               arm=="DP" ~ "Doxy-PEP")) %>%
                       mutate(arm = factor(arm, levels=c("Standard of care","Doxy-PEP"))),
        aes(x=as.character(visitcode), y=mass, color=arm)) +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
-  geom_point(position = position_jitterdodge(0.3,0.2,0.6), alpha=0.6, size=4) +
+  geom_point(position = position_jitterdodge(0.3,0,0.6), alpha=0.6, size=4) +
   geom_boxplot(alpha=0.5, outlier.shape=NA, fill=NA, width=0.6) +
   stat_pvalue_manual(stat.test %>% filter(!is.na(visitcode)),  label = "{p_char}", tip.length = 0, size=4, bracket.nudge.y = -2.5) +
   stat_pvalue_manual(stat.test %>% filter(!is.na(arm)),  label = "{p_char}", tip.length = 0, size=4, bracket.nudge.y = -1.5)+
   xlab("") + ylab("Normalized ARG mass per million reads (pg)\n") +
   labs(color="") +
+  coord_cartesian(clip="off") +
   scale_y_log10(labels = trans_format("log10", math_format(10^.x)),
                 limits = c(1e-10,1)) +
   theme(legend.position = "top",
@@ -311,7 +535,7 @@ mass_visit
 
 
 
-## Figure 1C and D: Alpha diversity
+## Figure 2C and D: Alpha diversity
 
 ```{r DNA Alpha diversity}
 
@@ -347,12 +571,13 @@ adiv <- ggplot(DNA_samples %>%
                                         arm=="DP" ~ "Doxy-PEP")) %>%
                  mutate(arm = factor(arm, levels=c("Standard of care","Doxy-PEP"))),
        aes(x=visitcode, y=SDI_AMR_dpm, color=arm)) +
+  coord_cartesian(clip="off") +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
-  geom_point(position = position_jitterdodge(0.3,0.2,0.6), alpha=0.6, size=4) +
+  geom_point(position = position_jitterdodge(0.3,0,0.6), alpha=0.6, size=4) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
   stat_pvalue_manual(stat.test %>% filter(!is.na(visitcode)),  label = "p.adj = {format(round(p.adj, digits=2), nsmall = 2)}", tip.length = 0, size=4) +
   stat_pvalue_manual(stat.test %>% filter(!is.na(arm)),  label = "p.adj = {format(round(p.adj, digits=2), nsmall = 2)}", tip.length = 0, size=4)+
-  scale_y_continuous(limits = c(0.5,5.5), breaks = seq(1, 5, by = 1), expand=c(0,0)) + 
+  scale_y_continuous(limits = c(0,5), breaks = seq(0, 5, by = 1), expand=c(0,0)) + 
   xlab("") + 
   ylab("Shannon Diversity Index\n") +
   labs(color="") +
@@ -397,12 +622,13 @@ adiv <- ggplot(RNA_samples %>%
                                         arm=="DP" ~ "Doxy-PEP")) %>%
                  mutate(arm = factor(arm, levels=c("Standard of care","Doxy-PEP"))),
        aes(x=visitcode, y=SDI_AMR_dpm, color=arm)) +
+  coord_cartesian(clip="off") +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
-  geom_point(position = position_jitterdodge(0.3,0.2,0.6), alpha=0.6, size=4) +
+  geom_point(position = position_jitterdodge(0.3,0,0.6), alpha=0.6, size=4) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
   stat_pvalue_manual(stat.test %>% filter(!is.na(visitcode)),  label = "p.adj = {format(round(p.adj, digits=2), nsmall = 2)}", tip.length = 0, size=4) +
   stat_pvalue_manual(stat.test %>% filter(!is.na(arm)),  label = "p.adj = {format(round(p.adj, digits=2), nsmall = 2)}", tip.length = 0, size=4)+
-  scale_y_continuous(limits = c(-0.5,5.5), breaks = seq(0, 5, by = 1), expand=c(0,0)) + 
+  scale_y_continuous(limits = c(0,5), breaks = seq(0, 5, by = 1), expand=c(0,0)) + 
   xlab("") + 
   ylab("Shannon Diversity Index\n") +
   labs(color="") +
@@ -413,7 +639,7 @@ adiv
 ```
 
 
-## Figure 1E and F: Beta diversity
+## Figure 2E and F: Beta diversity
 
 ```{r DNA beta diversity Month 6 SOC vs DP}
 
@@ -525,7 +751,7 @@ NMDS_int
 ```
 
 
-## Figure 2A and B: Num Tet genes by visit
+## Figure 3A and B: Num Tet genes by visit
 
 ```{r DNA num_tet by visitcode}
 
@@ -560,11 +786,12 @@ agg_num_tet_visit <- ggplot(DNA_samples %>% mutate(visitcode=as.character(visitc
                                                                    arm=="DP" ~ "Doxy-PEP")) %>%
                               mutate(arm = factor(arm, levels=c("Standard of care","Doxy-PEP"))),
        aes(x=visitcode, y=num_tet, color=arm)) +
+  coord_cartesian(clip="off") +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
-  geom_point(position = position_jitterdodge(0.3,0.2,0.6), alpha=0.6) +
+  geom_point(position = position_jitterdodge(0.3,0,0.6), alpha=0.6, size=4) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
   stat_pvalue_manual(stat.test,  label = "p.adj = {format(round(p.adj, digits=2), nsmall = 2)}", tip.length = 0, size=4) +
-  scale_y_continuous(limits = c(-0.5,30), breaks = seq(0, 30, by = 5)) +
+  scale_y_continuous(limits = c(0,30), breaks = seq(0, 30, by = 5), expand=c(0,0)) +
   xlab("") + ylab("Tetracycline ARG richness\n") +
   labs(color="") +
   theme(legend.position = "top")
@@ -611,12 +838,13 @@ agg_num_tet_visit <- ggplot(RNA_samples %>% mutate(visitcode=as.character(visitc
                                                                    arm=="DP" ~ "Doxy-PEP")) %>%
                               mutate(arm = factor(arm, levels=c("Standard of care","Doxy-PEP"))),
        aes(x=visitcode, y=num_tet, color=arm)) +
+  coord_cartesian(clip="off") +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
-  geom_point(position = position_jitterdodge(0.3,0.2,0.6), alpha=0.6) +
+  geom_point(position = position_jitterdodge(0.3,0,0.6), alpha=0.6, size=4) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
 #  stat_pvalue_manual(stat.test_byvisit,  label = "{p_char}", tip.length = 0, size=4) +
   stat_pvalue_manual(stat.test,  label = "{p_char}", tip.length = 0, size=4) +
-  scale_y_continuous(limits = c(-0.5,15), breaks = seq(0, 15, by = 5)) +
+  scale_y_continuous(limits = c(0,15), breaks = seq(0, 15, by = 5), expand=c(0,0)) +
   xlab("") + ylab("Tetracycline ARG richness\n") +
   labs(color="") +
   theme(legend.position = "top")
@@ -629,7 +857,7 @@ agg_num_tet_visit
 
 
 
-## Figure 2C and D: Proportion of tet mass to AMR mass
+## Figure 3C and D: Proportion of tet mass to AMR mass
 
 ```{r DNA AMR mass tet of resistome mass by visitcode}
 
@@ -659,14 +887,17 @@ stat.test <- stat.test_byvisit %>% bind_rows(stat.test_byarm) %>%
                             TRUE ~ paste("p.adj =", as.character(format(round(p.adj, digits=2), nsmall = 2))))) 
 
 
-tet_AMR_mass_visit <- ggplot(DNA_samples %>% mutate(arm = factor(arm, levels=c("SOC","DP"))),
+tet_AMR_mass_visit <- ggplot(DNA_samples %>% mutate(arm = case_when(arm=="SOC" ~ "Standard of care",
+                                                                   arm=="DP" ~ "Doxy-PEP")) %>%
+                              mutate(arm = factor(arm, levels=c("Standard of care","Doxy-PEP"))),
        aes(x=as.character(visitcode), y=sum_tet_AMR_mass_perc/100, color=arm)) +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
-  geom_point(position = position_jitterdodge(0.3,0.02,0.6), alpha=0.6, size=4) +
+  coord_cartesian(clip="off") +
+  geom_point(position = position_jitterdodge(0.3,0,0.6), alpha=0.6, size=4) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
   stat_pvalue_manual(stat.test,  label = "{p_char}", tip.length = 0, size=4) +
   xlab("") + ylab("Tetracycline ARG proportion\nof the resistome mass\n") +
-  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.2), expand=c(0.01,0),
+  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
                      labels = scales::percent_format(accuracy = 1)) + 
   labs(color="") +
   theme(legend.position = "top")
@@ -707,14 +938,17 @@ stat.test <- stat.test_byvisit %>% bind_rows(stat.test_byarm) %>%
                             TRUE ~ paste("p.adj =", as.character(format(round(p.adj, digits=2), nsmall = 2))))) 
 
 
-tet_AMR_mass_visit <- ggplot(RNA_samples %>% mutate(arm = factor(arm, levels=c("SOC","DP"))),
+tet_AMR_mass_visit <- ggplot(RNA_samples %>% mutate(arm = case_when(arm=="SOC" ~ "Standard of care",
+                                                                   arm=="DP" ~ "Doxy-PEP")) %>%
+                              mutate(arm = factor(arm, levels=c("Standard of care","Doxy-PEP"))),
        aes(x=as.character(visitcode), y=sum_tet_AMR_mass_perc/100, color=arm)) +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
-  geom_point(position = position_jitterdodge(0.3,0.01,0.6), alpha=0.6, size=4) +
+  coord_cartesian(clip="off") +
+  geom_point(position = position_jitterdodge(0.3,0,0.6), alpha=0.6, size=4) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
   stat_pvalue_manual(stat.test,  label = "{p_char}", tip.length = 0, size=4)+
   xlab("") + ylab("Tetracycline ARG proportion\nof the resistome mass\n") +
-  scale_y_continuous(limits = c(-0.01,1), breaks = seq(0, 1, by = 0.2), expand=c(0.01,0),
+  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
                      labels = scales::percent_format(accuracy = 1)) + 
   labs(color="") +
   theme(legend.position = "top")
@@ -726,7 +960,7 @@ tet_AMR_mass_visit
 ```
 
 
-## Figure 2E and F: Proportion of ARG class mass to total ARG mass
+## Figure 3E and F: Proportion of ARG class mass to total ARG mass
 
 ```{r DNA AMR mass percent resistome for all classes by visitcode}
 
@@ -746,11 +980,12 @@ mass_perc_visit <- ggplot(DNA_massperc_table %>%
                             filter(abx_class %in% DNA_abx_class_list  & arm=="DP") %>%
                             mutate(arm = factor(arm, levels=c("SOC","DP")),visitcode=as.character(visitcode)),
        aes(x=abx_class, y=mass_percent/100, color=visitcode)) +
+  coord_cartesian(clip="off") +
   scale_color_manual(values = c("#2bb6d4","#d4492b"), na.value="gray") +
-  geom_point(position = position_jitterdodge(0.3,0.01,0.6), alpha=0.6) +
+  geom_point(position = position_jitterdodge(0.2,0,0.6), alpha=0.6) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) + 
   stat_pvalue_manual(stat.test_byvisit,  label = "{p_char}", tip.length = 0, size=4) +
-  scale_y_continuous(limits = c(-0.02,1.1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
+  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
                      labels = scales::percent_format(accuracy = 1)) + 
   xlab("") + ylab("Proportion of resistome mass\n") +
   labs(color="") +
@@ -774,19 +1009,21 @@ stat.test_byvisit <- RNA_massperc_table %>%
   add_significance("p.adj") %>%
   add_xy_position(x = "abx_class", dodge = 0.8) %>%
   mutate(y.position=case_when(y.position<30 ~ 0.2,
-                              TRUE ~ y.position/110),
+                              y.position>100 ~ 1,
+                              TRUE ~ y.position/100),
          p_char = case_when(p.adj<0.1 ~ paste("p.adj =",format(p.adj, scientific = TRUE, digits = 2)),
                             TRUE ~ paste("p.adj =", as.character(format(round(p.adj, digits=2), nsmall = 2)))))
 
 mass_perc_visit <- ggplot(RNA_massperc_table %>%
                             filter(abx_class %in% DNA_abx_class_list & arm=="DP") %>%
                             mutate(arm = factor(arm, levels=c("SOC","DP")),visitcode=as.character(visitcode)),
-       aes(x=abx_class, y=mass_percent/100, color=visitcode)) +
+       aes(x=abx_class, y=round(mass_percent/100, digits=2), color=visitcode)) +
   scale_color_manual(values = c("#2bb6d4","#d4492b"), na.value="gray") +
-  geom_point(position = position_jitterdodge(0.3,0.01,0.6), alpha=0.6) +
+  coord_cartesian(clip="off") +
+  geom_point(position = position_jitterdodge(0.2,0,0.6), alpha=0.6) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) + 
   stat_pvalue_manual(stat.test_byvisit,  label = "{p_char}", tip.length = 0, size=4) +
-  scale_y_continuous(limits = c(-0.02,1.1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
+  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
                      labels = scales::percent_format(accuracy = 1)) + 
   xlab("") + ylab("Proportion of resistome mass\n") +
   labs(color="") +
@@ -800,20 +1037,10 @@ mass_perc_visit
 
 
 
-## Figure 3A and B: DNA-seq dose dependent analysis
+## Figure 4A and B: DNA-seq dose dependent analysis
 
 
 ```{r DNA dose analysis}
-
-DNA_doses <- DNA_samples %>% mutate(dose_cat = case_when(doxy_comb==0 ~ "0",
-                                                         doxy_comb<=25 & doxy_comb>0 ~ "1-25",
-                                                         doxy_comb>25 & doxy_comb<=50 ~ "26-50",
-                                                         doxy_comb>50 ~ ">50")) %>%
-  mutate(dose_cat = factor(dose_cat, levels=c("0","1-25","26-50",">50"))) %>%
-  mutate(dose_rank = case_when(dose_cat == "0" ~ 1,
-                               dose_cat == "1-25" ~ 2,
-                               dose_cat == "26-50" ~ 3,
-                               dose_cat == ">50" ~ 4))
 
 # tetracycline ARG richness
 
@@ -833,10 +1060,12 @@ cor.test(formula = ~ dose_rank + num_tet, data=DNA_doses, method = 'spearman')
 
 DNA_dose_num <- ggplot(DNA_doses,
        aes(x=dose_cat, y=num_tet, color=dose_cat)) +
-  geom_jitter(width = 0.2, alpha=0.6, size=2) +
+  coord_cartesian(clip="off") +
+  geom_point(position = position_jitterdodge(1,0,0.6), alpha=0.6, size=4) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
  scale_color_manual(values = c("dimgray","darkseagreen3","#29AF7FFF","#1F968BFF"), na.value="gray") +
   annotate("text", x=0.5, y=1, label="Spearman's rho = 2.7 x 10-2, p-value = 0.76", hjust = 0, size=4) + 
+  scale_y_continuous(limits = c(0,30), breaks = seq(0, 30, by = 5), expand=c(0,0)) + 
   xlab("\nDoxycycline doses") + ylab("Tetracycline ARG richness\n") +
   stat_pvalue_manual(stat.test,  label = "{p_char}", tip.length = 0, size=4)+
   theme(legend.position = "none")
@@ -865,13 +1094,14 @@ cor.test(formula = ~ dose_rank + sum_tet_AMR_mass_perc, data=DNA_doses, method =
 
 DNA_dose_mass <- ggplot(DNA_doses,
        aes(x=dose_cat, y=sum_tet_AMR_mass_perc/100, color=dose_cat)) +
-  geom_jitter(width = 0.2, alpha=0.6, size=2) +
+  coord_cartesian(clip="off") +
+  geom_point(position = position_jitterdodge(1,0,0.6), alpha=0.6, size=4) +
  scale_color_manual(values = c("dimgray","darkseagreen3","#29AF7FFF","#1F968BFF"), na.value="gray") +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
-  annotate("text", x=0.5, y=0.02, label="Spearman's rho = 0.23, p-value = 9.0 x 10-3", hjust = 0, size=4) + 
+  annotate("text", x=0.5, y=0.05, label="Spearman's rho = 0.23, p-value = 9.0 x 10-3", hjust = 0, size=4) + 
     stat_pvalue_manual(stat.test,  label = "{p_char}", tip.length = 0, size=4)+
   xlab("\nDoxycycline doses") + ylab("Tetracycline ARG proportion of the resistome mass\n") +
-  scale_y_continuous(limits = c(-0.02,1.1), breaks = seq(0, 1, by = 0.2), expand=c(0.01,0),
+  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
                      labels = scales::percent_format(accuracy = 1)) + 
   theme(legend.position = "none")
 
@@ -879,20 +1109,9 @@ DNA_dose_mass
 
 ```
 
-## Figure 3C and D: RNA-seq dose dependent analysis
+## Figure 4C and D: RNA-seq dose dependent analysis
 
 ```{r RNA dose analysis}
-
-
-RNA_doses <- RNA_samples %>% mutate(dose_cat = case_when(doxy_comb==0 ~ "0",
-                                                         doxy_comb<=25 & doxy_comb>0 ~ "1-25",
-                                                         doxy_comb>25 & doxy_comb<=50 ~ "26-50",
-                                                         doxy_comb>50 ~ ">50")) %>%
-  mutate(dose_cat = factor(dose_cat, levels=c("0","1-25","26-50",">50"))) %>%
-  mutate(dose_rank = case_when(dose_cat == "0" ~ 1,
-                               dose_cat == "1-25" ~ 2,
-                               dose_cat == "26-50" ~ 3,
-                               dose_cat == ">50" ~ 4))
 
 # tetracycline ARG richness
 
@@ -912,11 +1131,13 @@ cor.test(formula = ~ dose_rank + num_tet, data=RNA_doses, method = 'spearman')
 
 RNA_dose_num <- ggplot(RNA_doses,
        aes(x=dose_cat, y=num_tet, color=dose_cat)) +
-  geom_jitter(width = 0.2, alpha=0.6, size=2) +
+  coord_cartesian(clip="off") +
+  geom_point(position = position_jitterdodge(1,0,0.6), alpha=0.6, size=4) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
  scale_color_manual(values = c("dimgray","darkseagreen3","#29AF7FFF","#1F968BFF"), na.value="gray") +
-  annotate("text", x=0.5, y=8, label="Spearman's rho = 0.39, p-value = 2.2 x 10-4", hjust = 0, size=4) + 
+  annotate("text", x=0.5, y=13.5, label="Spearman's rho = 0.39, p-value = 2.2 x 10-4", hjust = 0, size=4) + 
     stat_pvalue_manual(stat.test,  label = "{p_char}", tip.length = 0, size=4)+
+  scale_y_continuous(limits = c(0,14), breaks = seq(0, 14, by = 2), expand=c(0,0)) + 
   xlab("\nDoxycycline doses") + ylab("Tetracycline ARG richness\n") +
   theme(legend.position = "none")
 
@@ -942,12 +1163,13 @@ cor.test(formula = ~ dose_rank + sum_tet_AMR_mass_perc, data=RNA_doses, method =
 
 RNA_dose_mass <- ggplot(RNA_doses,
        aes(x=dose_cat, y=sum_tet_AMR_mass_perc/100, color=dose_cat)) +
-  geom_jitter(width = 0.2, alpha=0.6, size=2) +
+  coord_cartesian(clip="off") +
+  geom_point(position = position_jitterdodge(1,0,0.6), alpha=0.6, size=4) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
  scale_color_manual(values = c("dimgray","darkseagreen3","#29AF7FFF","#1F968BFF"), na.value="gray") +
-  annotate("text", x=0.5, y=0.9, label="Spearman's rho = 0.55, p-value = 3.7 x 10-8", hjust = 0, size=4) + 
+  annotate("text", x=0.5, y=0.95, label="Spearman's rho = 0.55, p-value = 3.7 x 10-8", hjust = 0, size=4) + 
     stat_pvalue_manual(stat.test,  label = "{p_char}", tip.length = 0, size=4)+
-  scale_y_continuous(limits = c(-0.02,1.1), breaks = seq(0, 1, by = 0.2), expand=c(0.01,0),
+  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
                      labels = scales::percent_format(accuracy = 1)) + 
   xlab("\nDoxycycline doses") + ylab("Tetracycline ARG proportion of the resistome\n") +
   theme(legend.position = "none")
@@ -957,7 +1179,7 @@ RNA_dose_mass
 
 ```
 
-## Figure 4A and B: Paired samples - Numbers of tet ARGs
+## Figure 5A and B: Paired samples - Numbers of tet ARGs
 
 ```{r paired DNA tet gene numbers}
 
@@ -978,16 +1200,18 @@ stat.test_byarm <- DNA_paired %>%
 paired_tet_AMR_num <- ggplot(DNA_paired,
        aes(x=as.character(visitcode), y=num_tet, color=arm)) +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
+  coord_cartesian(clip="off") +
   geom_point(alpha=0.6, size=4) +
   geom_line(aes(group=ptid, alpha=0.3)) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
   xlab("") + ylab("Tetracycline ARG richness\n") +
   labs(color="") +
   facet_grid(.~arm, scales="free", space="free") +
-  scale_y_continuous(limits = c(0,25), breaks = seq(0, 25, by = 5), expand=c(0.01,0)) + 
+  scale_y_continuous(limits = c(0,25), breaks = seq(0, 25, by = 5), expand=c(0,0)) + 
   guides(alpha=FALSE) +
   stat_pvalue_manual(stat.test_byarm,  label = "{p_char}", tip.length = 0, size=4) +
-  theme(legend.position = "top")
+  theme(legend.position = "top",
+        strip.text.x = element_blank())
 
 paired_tet_AMR_num
 
@@ -1015,14 +1239,17 @@ paired_tet_AMR_num <- ggplot(RNA_paired,
        aes(x=as.character(visitcode), y=num_tet, color=arm)) +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
   geom_point(alpha=0.6, size=4) +
+  coord_cartesian(clip="off") +
   geom_line(aes(group=ptid, alpha=0.3)) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
   xlab("") + ylab("Tetracycline ARG richness\n") +
   labs(color="") +
   facet_grid(.~arm, scales="free", space="free") +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0, 8, by = 2), expand=c(0,0)) + 
   guides(alpha=FALSE) +
   stat_pvalue_manual(stat.test_byarm,  label = "{p_char}", tip.length = 0, size=4) +
-  theme(legend.position = "top")
+  theme(legend.position = "top",
+        strip.text.x = element_blank())
 
 paired_tet_AMR_num
 
@@ -1031,7 +1258,7 @@ paired_tet_AMR_num
 
 
 
-## Figure 4C and D: Paired samples - Proportion of tet mass to AMR mass
+## Figure 5C and D: Paired samples - Proportion of tet mass to AMR mass
 
 
 ```{r paired DNA AMR mass tet of resistome mass by visitcode}
@@ -1052,6 +1279,7 @@ stat.test_byarm <- DNA_paired %>%
 paired_tet_AMR_mass_perc_visit <- ggplot(DNA_paired,
        aes(x=as.character(visitcode), y=sum_tet_AMR_mass_perc, color=arm)) +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
+  coord_cartesian(clip="off") +
   geom_point(alpha=0.6, size=4) +
   geom_line(aes(group=ptid, alpha=0.3)) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
@@ -1059,10 +1287,11 @@ paired_tet_AMR_mass_perc_visit <- ggplot(DNA_paired,
   labs(color="") +
   facet_grid(.~arm, scales="free", space="free") +
   guides(alpha=FALSE) +
-  scale_y_continuous(limits = c(-0.02,1), breaks = seq(0, 1, by = 0.2), expand=c(0.0,0),
+  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
                      labels = scales::percent_format(accuracy = 1)) + 
   stat_pvalue_manual(stat.test_byarm,  label = "{p_char}", tip.length = 0, size=4) +
-  theme(legend.position = "top")
+  theme(legend.position = "top",
+        strip.text.x = element_blank())
 
 paired_tet_AMR_mass_perc_visit
 
@@ -1090,6 +1319,7 @@ stat.test_byarm <- RNA_paired %>%
 paired_tet_AMR_mass_perc_visit <- ggplot(RNA_paired,
        aes(x=as.character(visitcode), y=sum_tet_AMR_mass_perc, color=arm)) +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
+  coord_cartesian(clip="off") +
   geom_point(alpha=0.6, size=4) +
   geom_line(aes(group=ptid, alpha=0.3)) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) +
@@ -1097,10 +1327,11 @@ paired_tet_AMR_mass_perc_visit <- ggplot(RNA_paired,
   labs(color="") +
   facet_grid(.~arm, scales="free", space="free") +
   guides(alpha=FALSE) +
-  scale_y_continuous(limits = c(-0.02,1), breaks = seq(0, 1, by = 0.2), expand=c(0.0,0),
+  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
                      labels = scales::percent_format(accuracy = 1)) + 
   stat_pvalue_manual(stat.test_byarm,  label = "{p_char}", tip.length = 0, size=4) +
-  theme(legend.position = "top")
+  theme(legend.position = "top",
+        strip.text.x = element_blank())
 
 paired_tet_AMR_mass_perc_visit
 
@@ -1110,7 +1341,7 @@ paired_tet_AMR_mass_perc_visit
 
 
 
-## Figure 4E: Paired samples - DNA tet heatmap
+## Figure 5E: Paired samples - DNA tet heatmap
 
 ```{r DNA tet heatmap}
 
@@ -1172,232 +1403,7 @@ amr_heatmap_tet
 # --------------------
 # RESULTS: SUPPLEMENTAL TABLES
 
-## Supplemental Table 1: Participants
-
-
-```{r supplemental table 1 demographics}
-
-# age
-DNA_metadata %>% group_by(arm) %>%
-  reframe(median = median(age), q1 = quantile(age,0.25), q3 = quantile(age,0.75), min = min(age), max = max(age))
-DNA_metadata %>% reframe(median = median(age), q1 = quantile(age,0.25), q3 = quantile(age,0.75), min = min(age), max = max(age))
-wilcox.test(DNA_metadata[DNA_metadata$arm=="SOC",]$age, DNA_metadata[DNA_metadata$arm=="DP",]$age)
-
-RNA_metadata %>% group_by(arm) %>%
-  reframe(median = median(age), q1 = quantile(age,0.25), q3 = quantile(age,0.75), min = min(age), max = max(age))
-RNA_metadata %>% reframe(median = median(age), q1 = quantile(age,0.25), q3 = quantile(age,0.75), min = min(age), max = max(age))
-wilcox.test(RNA_metadata[RNA_metadata$arm=="SOC",]$age, RNA_metadata[RNA_metadata$arm=="DP",]$age)
-
-# race/eth
-DNA_metadata %>%
-  mutate(raceeth = factor(raceeth, levels=c("Non-Hispanic White", "Hispanic White", "Asian/Pacific Islander", "Black/African American", "Other/Multiracial", "Unknown"))) %>%
-  group_by(arm, raceeth) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-DNA_metadata %>%
-  mutate(raceeth = factor(raceeth, levels=c("Non-Hispanic White", "Hispanic White", "Asian/Pacific Islander", "Black/African American", "Other/Multiracial", "Unknown"))) %>%
-  group_by(raceeth) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-fisher.test(table(DNA_metadata$arm, DNA_metadata$raceeth))
-
-RNA_metadata %>%
-  mutate(raceeth = factor(raceeth, levels=c("Non-Hispanic White", "Hispanic White", "Asian/Pacific Islander", "Black/African American", "Other/Multiracial", "Unknown"))) %>%
-  group_by(arm, raceeth) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-RNA_metadata %>%
-  mutate(raceeth = factor(raceeth, levels=c("Non-Hispanic White", "Hispanic White", "Asian/Pacific Islander", "Black/African American", "Other/Multiracial", "Unknown"))) %>%
-  group_by(raceeth) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-fisher.test(table(RNA_metadata$arm, RNA_metadata$raceeth))
-
-# education (levels 3 and above are some college education and above)
-DNA_metadata_college <- DNA_metadata %>%
-  mutate(college = case_when(education>=3 ~ 1,
-                             TRUE ~ 0))
-
-DNA_metadata_college %>%
-  group_by(arm, college) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-DNA_metadata_college %>%
-  group_by(college) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-fisher.test(table(DNA_metadata_college$arm, as.character(DNA_metadata_college$college)))
-
-RNA_metadata_college <- RNA_metadata %>%
-  mutate(college = case_when(education>=3 ~ 1,
-                             TRUE ~ 0))
-RNA_metadata_college %>%
-  group_by(arm, college) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-RNA_metadata_college %>%
-  group_by(college) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-fisher.test(table(RNA_metadata_college$arm, as.character(RNA_metadata_college$college)))
-
-
-# living situation: 1 is stable
-DNA_metadata_housed <- DNA_metadata %>%
-  mutate(housed = case_when(livingsituation==1 ~ 1,
-                             TRUE ~ 0))
-DNA_metadata_housed %>%
-  group_by(arm, housed) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-DNA_metadata_housed %>%
-  group_by(housed) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-fisher.test(table(DNA_metadata_housed$arm, as.character(DNA_metadata_housed$housed)))
-
-RNA_metadata_housed <-RNA_metadata %>%
-  mutate(housed = case_when(livingsituation==1 ~ 1,
-                             TRUE ~ 0)) 
-RNA_metadata_housed %>%
-  group_by(arm, housed) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-RNA_metadata_housed %>%
-  group_by(housed) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-fisher.test(table(RNA_metadata_housed$arm, as.character(RNA_metadata_housed$housed)))
-
-# hivstatus: 1 is living with HIV
-DNA_metadata %>%
-  group_by(arm, hivstatus) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-DNA_metadata %>%
-  group_by(hivstatus) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-chisq.test(DNA_metadata_housed$arm, DNA_metadata_housed$hivstatus, correct=FALSE)
-
-RNA_metadata %>%
-  group_by(arm, hivstatus) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-RNA_metadata %>%
-  group_by(hivstatus) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-chisq.test(RNA_metadata_housed$arm, RNA_metadata_housed$hivstatus, correct=FALSE)
-
-# CD4 count for those living with HIV at enrollment
-DNA_metadata_hiv <- DNA_metadata %>% filter(hivstatus==1) %>% mutate(cd4_avail = case_when(is.na(cd4_avail) ~ 0,
-                                                                                           TRUE ~ cd4_avail))
-DNA_metadata_hiv %>% group_by(arm, cd4_avail) %>% 
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-fisher.test(table(DNA_metadata_hiv$arm, DNA_metadata_hiv$cd4_avail))
-
-DNA_metadata_hiv %>% filter(cd4_avail==1) %>% group_by(arm) %>%
-  reframe(median = median(cd4_d0), q1 = quantile(cd4_d0,0.25), q3 = quantile(cd4_d0,0.75))
-DNA_metadata_hiv %>% filter(cd4_avail==1) %>% reframe(median = median(cd4_d0), q1 = quantile(cd4_d0,0.25), q3 = quantile(cd4_d0,0.75))
-wilcox.test(DNA_metadata_hiv[DNA_metadata_hiv$arm=="SOC" & DNA_metadata_hiv$cd4_avail==1,]$cd4_d0,
-            DNA_metadata_hiv[DNA_metadata_hiv$arm=="DP" & DNA_metadata_hiv$cd4_avail==1,]$cd4_d0)
-
-RNA_metadata_hiv <- RNA_metadata %>% filter(hivstatus==1) %>% mutate(cd4_avail = case_when(is.na(cd4_avail) ~ 0,
-                                                                                           TRUE ~ cd4_avail))
-RNA_metadata_hiv %>% group_by(arm, cd4_avail) %>% 
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-fisher.test(table(RNA_metadata_hiv$arm, RNA_metadata_hiv$cd4_avail))
-
-RNA_metadata_hiv %>% filter(cd4_avail==1) %>% group_by(arm) %>%
-  reframe(median = median(cd4_d0), q1 = quantile(cd4_d0,0.25), q3 = quantile(cd4_d0,0.75))
-RNA_metadata_hiv %>% filter(cd4_avail==1) %>% reframe(median = median(cd4_d0), q1 = quantile(cd4_d0,0.25), q3 = quantile(cd4_d0,0.75))
-wilcox.test(RNA_metadata_hiv[RNA_metadata_hiv$arm=="SOC" & RNA_metadata_hiv$cd4_avail==1,]$cd4_d0,
-            RNA_metadata_hiv[RNA_metadata_hiv$arm=="DP" & RNA_metadata_hiv$cd4_avail==1,]$cd4_d0)
-
-
-```
-
-
-
-## Supplemental Table 2: Month 6
-
-```{r Month 6 sample demographics}
-
-# demographics for only participants with month 6 samples
-DNA_samples_M6 <- DNA_samples %>% filter(visitcode=="Month 6") %>% mutate(dose_cat = case_when(doxy_comb==0 ~ "0",
-                                                         doxy_comb<=25 & doxy_comb>0 ~ "1-25",
-                                                         doxy_comb>25 & doxy_comb<=50 ~ "26-50",
-                                                         doxy_comb>50 ~ ">50")) 
-
-RNA_samples_M6 <- RNA_samples %>% filter(visitcode=="Month 6") %>% mutate(dose_cat = case_when(doxy_comb==0 ~ "0",
-                                                         doxy_comb<=25 & doxy_comb>0 ~ "1-25",
-                                                         doxy_comb>25 & doxy_comb<=50 ~ "26-50",
-                                                         doxy_comb>50 ~ ">50")) 
-
-# number of samples
-DNA_samples_M6 %>% group_by(arm) %>% summarise(n=n())
-
-# doxy doses
-DNA_samples_M6 %>% group_by(arm) %>%
-  reframe(median = median(doxy_comb), q1 = quantile(doxy_comb,0.25), q3 = quantile(doxy_comb,0.75), min = min(doxy_comb), max = max(doxy_comb))
-wilcox.test(DNA_samples_M6[DNA_samples_M6$arm=="SOC",]$doxy_comb, DNA_samples_M6[DNA_samples_M6$arm=="DP",]$doxy_comb)
-
-DNA_samples_M6 %>%
-  group_by(arm,dose_cat) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-fisher.test(table(DNA_samples_M6$arm, DNA_samples_M6$dose_cat))
-
-
-RNA_samples_M6 %>% group_by(arm) %>%
-  reframe(median = median(doxy_comb), q1 = quantile(doxy_comb,0.25), q3 = quantile(doxy_comb,0.75), min = min(doxy_comb), max = max(doxy_comb))
-wilcox.test(RNA_samples_M6[RNA_samples_M6$arm=="SOC",]$doxy_comb, RNA_samples_M6[RNA_samples_M6$arm=="DP",]$doxy_comb)
-
-RNA_samples_M6 %>%
-  group_by(arm,dose_cat) %>%
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-fisher.test(table(RNA_samples_M6$arm, RNA_samples_M6$dose_cat))
-
-# DNA antibiotics
-DNA_samples_M6_abx <- DNA_samples_M6 %>% select(sample_name, ptid, arm, Quinolone:Azithromycin, -Tetracycline) %>%
-  mutate(abx = ifelse(rowSums(.[-c(1:3)])==0, 0, 1)) %>%
-  pivot_longer(names_to = "abx_class", values_to = "days", cols = Quinolone:Azithromycin) %>%
-  mutate(abx_yn = case_when(days==0 ~ 0,
-                            TRUE ~ 1))
-# received non-doxy abx?
-DNA_samples_M6_abx %>% select(sample_name, arm, abx) %>% distinct() %>%
-  group_by(arm, abx) %>% 
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-
-chisq.test(DNA_samples_M6_abx$arm, DNA_samples_M6_abx$abx, correct=FALSE)
-
-# received non-doxy abx by class
-DNA_samples_M6_abx %>% group_by(arm, abx_class, abx_yn) %>% 
-  summarise(n = n()) %>% mutate(Freq = n/sum(n)) %>%
-  filter(abx_yn==1) %>% select(-abx_yn)
-
-chisq.test(DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Cephalosporin",]$arm, DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Cephalosporin",]$abx_yn, correct=FALSE) # Cephalosporin
-fisher.test(table(DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Penicillin",]$arm, DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Penicillin",]$abx_yn)) # Penicillin
-fisher.test(table(DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Clindamycin",]$arm, DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Clindamycin",]$abx_yn)) # Clindamycin
-fisher.test(table(DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Azithromycin",]$arm, DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Azithromycin",]$abx_yn)) # Azithromycin
-fisher.test(table(DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Quinolone",]$arm, DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Quinolone",]$abx_yn)) # Quinolone
-fisher.test(table(DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Vancomycin",]$arm, DNA_samples_M6_abx[DNA_samples_M6_abx$abx_class=="Vancomycin",]$abx_yn)) # Vancomycin
-
-
-# RNA antibiotics
-
-RNA_samples_M6_abx <- RNA_samples_M6 %>% select(sample_name, ptid, arm, Quinolone:Azithromycin, -Tetracycline) %>%
-  mutate(abx = ifelse(rowSums(.[-c(1:3)])==0, 0, 1)) %>%
-  pivot_longer(names_to = "abx_class", values_to = "days", cols = Quinolone:Azithromycin) %>%
-  mutate(abx_yn = case_when(days==0 ~ 0,
-                            TRUE ~ 1))
-# received non-doxy abx?
-RNA_samples_M6_abx %>% select(sample_name, arm, abx) %>% distinct() %>%
-   group_by(arm, abx) %>% 
-  summarise(n = n()) %>% mutate(Freq = n/sum(n))
-
-chisq.test(RNA_samples_M6_abx$arm, RNA_samples_M6_abx$abx, correct=FALSE)
-
-# received non-doxy abx by class
-RNA_samples_M6_abx %>% group_by(arm, abx_class, abx_yn) %>% 
-  summarise(n = n()) %>% mutate(Freq = n/sum(n)) %>%
-  filter(abx_yn==1) %>% select(-abx_yn)
-
-chisq.test(RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Cephalosporin",]$arm, RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Cephalosporin",]$abx_yn, correct=FALSE) # Cephalosporin
-fisher.test(table(RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Penicillin",]$arm, RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Penicillin",]$abx_yn)) # Penicillin
-fisher.test(table(RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Clindamycin",]$arm, RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Clindamycin",]$abx_yn)) # Clindamycin
-fisher.test(table(RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Azithromycin",]$arm, RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Azithromycin",]$abx_yn)) # Azithromycin
-fisher.test(table(RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Quinolone",]$arm, RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Quinolone",]$abx_yn)) # Quinolone
-fisher.test(table(RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Vancomycin",]$arm, RNA_samples_M6_abx[RNA_samples_M6_abx$abx_class=="Vancomycin",]$abx_yn)) # Vancomycin
-
-```
-
-
-## Supplemental Table 3: Regression for estimated ratio by ARG class (ST2)
+## Supplemental Table 1: Regression for estimated ratio by ARG class (ST2)
 
 ```{r DNA Regression for estimated ratio by ARG class}
 
@@ -1407,27 +1413,33 @@ DNA_abx_mass <- DNA_amr %>%
 
 DNA_masslm <- DNA_massperc_table %>%
   left_join(DNA_abx_mass, by=c("sample_name","abx_class")) %>%
+  left_join(samples %>% mutate(Cephalosporin = ifelse(visitcode=="Day 0", 0, Cephalosporin)) %>% select(sample_name, Cephalosporin), by="sample_name") %>%
   mutate_if(is.numeric, ~replace_na(., 0)) %>%
   mutate(group = paste(arm,visitcode)) %>%
-  mutate(group = factor(group, levels=c("DP Day 0","SOC Day 0","SOC Month 6","DP Month 6")))
-
+  mutate(group = factor(group, levels=c("DP Day 0","SOC Day 0","SOC Month 6","DP Month 6")),
+         mass_percent = round(mass_percent/100, digits=2))
 
 # Referent group of DP day 0
 
-summary(lm(mass_percent~visitcode + hivstatus, data = DNA_masslm %>% filter(arm=="DP" & abx_class=="Aminoglycoside")))
-confint(lm(mass_percent~visitcode + hivstatus, data = DNA_masslm %>% filter(arm=="DP" & abx_class=="Aminoglycoside")))
+Aminoglycoside <- DNA_masslm %>% filter(arm=="DP" & abx_class=="Aminoglycoside")
+summary(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = Aminoglycoside))
+confint(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = Aminoglycoside))
 
-summary(lm(mass_percent~visitcode + hivstatus, data = DNA_masslm %>% filter(arm=="DP" & abx_class=="Beta-Lactam")))
-confint(lm(mass_percent~visitcode + hivstatus, data = DNA_masslm %>% filter(arm=="DP" & abx_class=="Beta-Lactam")))
+Betalactam <- DNA_masslm %>% filter(arm=="DP" & abx_class=="Beta-Lactam")
+summary(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = Betalactam))
+confint(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = Betalactam))
 
-summary(lm(mass_percent~visitcode + hivstatus, data = DNA_masslm %>% filter(arm=="DP" & abx_class=="MLS")))
-confint(lm(mass_percent~visitcode + hivstatus, data = DNA_masslm %>% filter(arm=="DP" & abx_class=="MLS")))
+MLS <- DNA_masslm %>% filter(arm=="DP" & abx_class=="MLS")
+summary(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = MLS))
+confint(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = MLS))
 
-summary(lm(mass_percent~visitcode + hivstatus, data = DNA_masslm %>% filter(arm=="DP" & abx_class=="Sulfonamide/\nTrimethoprim")))
-confint(lm(mass_percent~visitcode + hivstatus, data = DNA_masslm %>% filter(arm=="DP" & abx_class=="Sulfonamide/\nTrimethoprim")))
+ST <- DNA_masslm %>% filter(arm=="DP" & abx_class=="Sulfonamide/\nTrimethoprim")
+summary(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = ST))
+confint(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = ST))
 
-summary(lm(mass_percent~visitcode + hivstatus, data = DNA_masslm %>% filter(arm=="DP" & abx_class=="Tetracycline")))
-confint(lm(mass_percent~visitcode + hivstatus, data = DNA_masslm %>% filter(arm=="DP" & abx_class=="Tetracycline")))
+Tetracycline <- DNA_masslm %>% filter(arm=="DP" & abx_class=="Tetracycline")
+summary(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = Tetracycline))
+confint(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = Tetracycline))
 
 
 ```
@@ -1443,33 +1455,41 @@ id <- amr %>% select(sample_name, ptid) %>% distinct()
 RNA_masslm <- RNA_massperc_table %>%
   left_join(RNA_abx_mass, by=c("sample_name","abx_class")) %>%
   left_join(id, by="sample_name") %>%
+    left_join(samples %>% mutate(Cephalosporin = ifelse(visitcode=="Day 0", 0, Cephalosporin)) %>% select(sample_name, Cephalosporin), by="sample_name") %>%
   mutate_if(is.numeric, ~replace_na(., 0)) %>%
   mutate(group = paste(arm,visitcode)) %>%
-  mutate(group = factor(group, levels=c("DP Day 0","SOC Day 0","SOC Month 6","DP Month 6")))
+  mutate(group = factor(group, levels=c("DP Day 0","SOC Day 0","SOC Month 6","DP Month 6")),
+         mass_percent = round(mass_percent/100, digits=2))
 
 # Referent group of DP day 0
 
-summary(lm(mass_percent~visitcode + hivstatus, data = RNA_masslm %>% filter(arm=="DP" & abx_class=="Aminoglycoside")))
-confint(lm(mass_percent~visitcode + hivstatus, data = RNA_masslm %>% filter(arm=="DP" & abx_class=="Aminoglycoside")))
+Aminoglycoside <- RNA_masslm %>% filter(arm=="DP" & abx_class=="Aminoglycoside")
+summary(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = Aminoglycoside))
+confint(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = Aminoglycoside))
 
-summary(lm(mass_percent~visitcode + hivstatus, data = RNA_masslm %>% filter(arm=="DP" & abx_class=="Beta-Lactam")))
-confint(lm(mass_percent~visitcode + hivstatus, data = RNA_masslm %>% filter(arm=="DP" & abx_class=="Beta-Lactam")))
+Betalactam <- RNA_masslm %>% filter(arm=="DP" & abx_class=="Beta-Lactam")
+summary(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = Betalactam))
+confint(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = Betalactam))
 
-summary(lm(mass_percent~visitcode + hivstatus, data = RNA_masslm %>% filter(arm=="DP" & abx_class=="MLS")))
-confint(lm(mass_percent~visitcode + hivstatus, data = RNA_masslm %>% filter(arm=="DP" & abx_class=="MLS")))
+MLS <- RNA_masslm %>% filter(arm=="DP" & abx_class=="MLS")
+summary(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = MLS))
+confint(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = MLS))
 
-summary(lm(mass_percent~visitcode + hivstatus, data = RNA_masslm %>% filter(arm=="DP" & abx_class=="Sulfonamide/\nTrimethoprim")))
-confint(lm(mass_percent~visitcode + hivstatus, data = RNA_masslm %>% filter(arm=="DP" & abx_class=="Sulfonamide/\nTrimethoprim")))
+ST <- RNA_masslm %>% filter(arm=="DP" & abx_class=="Sulfonamide/\nTrimethoprim")
+summary(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = ST))
+confint(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = ST))
 
-summary(lm(mass_percent~visitcode + hivstatus, data = RNA_masslm %>% filter(arm=="DP" & abx_class=="Tetracycline")))
-confint(lm(mass_percent~visitcode + hivstatus, data = RNA_masslm %>% filter(arm=="DP" & abx_class=="Tetracycline")))
+Tetracycline <- RNA_masslm %>% filter(arm=="DP" & abx_class=="Tetracycline")
+summary(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = Tetracycline))
+confint(gamlss(mass_percent ~ visitcode + hivstatus + Cephalosporin, family= BEINF, data = Tetracycline))
+
 
 ```
 
 
-## Supplemental Table 4: Proportional mass by ARG class and visit
+## Supplemental Table 2: Proportional mass by ARG class and visit
 
-```{r Supplemental Table 4}
+```{r Supplemental Table 2}
 
 DNA_massperc_table %>% group_by(visitcode, abx_class) %>% reframe(median = median(mass_percent))
 RNA_massperc_table %>% group_by(visitcode, abx_class) %>% reframe(median = median(mass_percent))
@@ -1482,7 +1502,7 @@ RNA_massperc_table %>% group_by(visitcode, abx_class) %>% reframe(median = media
 # --------------------
 # RESULTS: SUPPLEMENTAL FIGURES
 
-## Supplemental Figure 2A: ARGs in the resistome at enrollment
+## Supplemental Figure 1A: ARGs in the resistome at enrollment
 
 ```{r all AMR genes heatmap}
 
@@ -1525,7 +1545,7 @@ amr_heatmap
 
 
 
-## Supplemental Figure 2B and C: Proportional mass of the different classes of ARGs at enrollment
+## Supplemental Figure 1B and C: Proportional mass of the different classes of ARGs at enrollment
 
 ```{r DNA AMR mass percent resistome for all classes at enrollment}
 
@@ -1537,19 +1557,18 @@ order <- DNA_massperc_table %>% filter(visitcode=="Day 0") %>%
   arrange(desc(median)) %>%
   mutate(order=row_number())
 
-unique(DNA_massperc_table$abx_class)
-
 mass_perc <- ggplot(DNA_massperc_table %>%
                       mutate(abx_class=case_when(abx_class=="Multi-Drug Efflux Pump" ~ "Multi-Drug\nEfflux Pump",
                                                  TRUE ~ abx_class)) %>%
                       mutate(abx_class=factor(abx_class, levels=c("Aminoglycoside", "Beta-Lactam", "Chloramphenicol", "Fluoroquinolone",  "Glycopeptide", "MLS", "Multi-Drug\nEfflux Pump", "Peptide", "Sulfonamide/\nTrimethoprim","Tetracycline", "Other"))) %>%
                       filter(visitcode=="Day 0") %>% 
                       left_join(order %>% select(-median), by="abx_class"),
-       aes(x=reorder(abx_class, order), y=mass_percent/100, color=abx_class)) +
+       aes(x=reorder(abx_class, order), y=round(mass_percent/100, digits=2), color=abx_class)) +
+  coord_cartesian(clip="off") +
   scale_color_manual(values = c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02", "#A6761D", "#666666","#FF7F00","#1F78B4", "#E31A1C"), na.value="gray") +
-  geom_jitter(width = 0.2, alpha=0.6, size=2) +
+  geom_jitter(width = 0.2, height=0, alpha=0.6, size=2) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) + 
-  scale_y_continuous(limits = c(-0.02,1.1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
+  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
                      labels = scales::percent_format(accuracy = 1)) + 
   xlab("") + ylab("Proportion of resistome mass\n") +
   labs(color="") + 
@@ -1578,11 +1597,12 @@ mass_perc <- ggplot(RNA_massperc_table %>%
                       mutate(abx_class=factor(abx_class, levels=c("Aminoglycoside", "Beta-Lactam", "Chloramphenicol", "Fluoroquinolone",  "Glycopeptide", "MLS", "Multi-Drug\nEfflux Pump", "Peptide", "Sulfonamide/\nTrimethoprim","Tetracycline", "Other"))) %>%
                       filter(visitcode=="Day 0") %>% 
                       left_join(order %>% select(-median), by="abx_class"),
-       aes(x=reorder(abx_class, order), y=mass_percent/100, color=abx_class)) +
+       aes(x=reorder(abx_class, order), y=round(mass_percent/100, digits=2), color=abx_class)) +
+  coord_cartesian(clip="off") +
   scale_color_manual(values = c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02", "#A6761D", "#666666","#FF7F00","#1F78B4", "#E31A1C"), na.value="gray") +
-  geom_jitter(width = 0.2, alpha=0.6, size=2) +
+  geom_jitter(width = 0.2, height=0, alpha=0.6, size=2) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) + 
-  scale_y_continuous(limits = c(-0.02,1.1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
+  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.2), expand=c(0,0),
                      labels = scales::percent_format(accuracy = 1)) + 
   xlab("") + ylab("Proportion of resistome mass\n") +
   labs(color="") +
@@ -1596,7 +1616,7 @@ mass_perc
 
 
 
-## Supplemental Figure 3: Tet ARGs heatmap
+## Supplemental Figure 2: Tet ARGs heatmap
 
 ```{r DNA tet amr heatmap}
 
@@ -1684,7 +1704,7 @@ amr_heatmap_tet
 
 
 
-## Supplemental Figure 4: ARG class dpm (abundance and expression)
+## Supplemental Figure 3: ARG class dpm (abundance and expression)
 
 ```{r DNA sum dpm ARG class by visitcode}
 
@@ -1712,13 +1732,14 @@ dpm_visit <- ggplot(DNA_dpm_table %>%
                             filter(abx_class %in% DNA_abx_class_list  & arm=="DP") %>%
                             mutate(arm = factor(arm, levels=c("SOC","DP")),visitcode=as.character(visitcode)),
        aes(x=abx_class, y=abx_dpm, color=visitcode)) +
+  coord_cartesian(clip="off") +
   scale_color_manual(values = c("#2bb6d4","#d4492b"), na.value="gray") +
-  geom_point(position = position_jitterdodge(0.3,0.01,0.6), alpha=0.6) +
+  geom_point(position = position_jitterdodge(0.2,0,0.6), alpha=0.6) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) + 
   stat_pvalue_manual(stat.test_byvisit,  label = "{p_char}", tip.length = 0, size=4) +
   scale_y_log10(breaks = c(0.01, 0.1, 1, 10 , 100),
                 labels = c(0.01, 0.1, 1, 10 , 100),
-    expand = c(0.1, 0)) +
+    expand = c(0.05, 0)) +
   xlab("") + ylab("ARG class abundance (dpm)\n") +
   labs(color="") +
   theme(legend.position = "top",
@@ -1756,13 +1777,14 @@ dpm_visit <- ggplot(RNA_dpm_table %>%
                             filter(abx_class %in% DNA_abx_class_list  & arm=="DP") %>%
                             mutate(arm = factor(arm, levels=c("SOC","DP")),visitcode=as.character(visitcode)),
        aes(x=abx_class, y=abx_dpm, color=visitcode)) +
+  coord_cartesian(clip="off") +
   scale_color_manual(values = c("#2bb6d4","#d4492b"), na.value="gray") +
-  geom_point(position = position_jitterdodge(0.3,0.01,0.6), alpha=0.6) +
+  geom_point(position = position_jitterdodge(0.3,0,0.6), alpha=0.6) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, fill=NA, width=0.6) + 
   stat_pvalue_manual(stat.test_byvisit,  label = "{p_char}", tip.length = 0, size=4) +
   scale_y_log10(breaks = c(0.01, 0.1, 1, 10),
                 labels = c(0.01, 0.1, 1, 10),
-    expand = c(0.1, 0)) +
+    expand = c(0.05, 0)) +
   xlab("") + ylab("ARG class expression (dpm)\n") +
   labs(color="") +
   theme(legend.position = "top",
@@ -1774,5 +1796,140 @@ dpm_visit
 
 
 
+## Supplemental Figure 4A and C: DNA-seq linear regression plots of the dose analysis
 
+```{r DNA linear regression dose analysis}
+
+# tetracycline ARG richness
+
+DNA_num <- ggplot(DNA_doses %>% group_by(doxy_comb, num_tet) %>% add_count(num_tet, name = "count_num"),
+       aes(x=doxy_comb, y=num_tet)) + 
+  geom_point(aes(color=dose_cat, size=count_num, alpha=0.9)) +
+  scale_color_manual(values = c("dimgray","darkseagreen3","#29AF7FFF","#1F968BFF"), na.value="gray") +
+  scale_y_continuous(expand = c(0, 0), breaks = seq(0, 25, 5),  limits = c(0, 25)) +
+  scale_x_continuous(expand=c(0,0)) + 
+  xlab("\nDoxycycline doses") + ylab("Tetracycline ARG richness\n") +
+  coord_cartesian(clip="off") +
+  geom_smooth(method = "lm", se=TRUE, color="black", alpha=0.3) +
+  scale_size(range = c(2,5),
+             breaks = c(1, 5, 10),
+             labels = c(1, 5, 10)) +
+  labs(color="Doxycycline doses", size="Number of samples") +
+  guides(color=guide_legend(order = 1), size=guide_legend(order = 2), alpha="none") +
+  geom_text(x = 200, y = 25, hjust=1, label = lm_eqn(DNA_doses, DNA_doses$num_tet), parse = TRUE) +
+  geom_text(x = 200, y = 23, hjust=1, label = lm_pvalue(DNA_doses, DNA_doses$num_tet), parse = TRUE) +
+  theme(legend.position = "top",
+        legend.box = "vertical",
+        legend.margin = margin(-7, 0, 0, 0),
+        plot.margin = margin(10, 10, 10, 10))
+
+DNA_num
+
+
+# tetracycline ARG proportion to resistome mass
+
+Tetracycline <- DNA_doses %>% mutate(tetmp = sum_tet_AMR_mass_perc/100) %>% select(doxy_comb, tetmp, dose_cat)
+line <- gamlss(tetmp ~ doxy_comb, family= BEINF, data = Tetracycline)
+
+# Predict values with confidence intervals
+predicted <- predict(line, type="response", se.fit=TRUE)
+Tetracycline$predicted <- predicted$fit
+Tetracycline$se_fit <- predicted$se.fit
+
+# Calculate confidence intervals (e.g., 95% confidence interval)
+Tetracycline$lower_ci <- Tetracycline$predicted - 1.96 * Tetracycline$se_fit
+Tetracycline$upper_ci <- Tetracycline$predicted + 1.96 * Tetracycline$se_fit
+
+# Using summary(model) to extract relevant statistics for p-value
+summary_model <- summary(line)
+p_value <- summary_model[2,4]
+
+DNA_mass <- ggplot(Tetracycline, aes(x=doxy_comb)) + 
+  geom_point(aes(y = tetmp, color=dose_cat, alpha=0.9), size = 3, position = position_jitterdodge()) +
+  scale_color_manual(values = c("dimgray","darkseagreen3","#29AF7FFF","#1F968BFF"), na.value="gray") +
+  scale_y_continuous(expand = c(0, 0), breaks = seq(0, 1, 0.2),  limits = c(0, 1)) +
+  scale_x_continuous(expand=c(0,0)) + 
+  xlab("\nDoxycycline doses") + ylab("Tetracycline ARG proportion of the resistome mass\n") +
+  coord_cartesian(clip="off") +
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), fill = "gray", alpha = 0.5)  + # Confidence intervals
+  geom_line(aes(y = predicted), color = 'black') +  # Fitted line
+  labs(color="Doxycycline doses") +
+  guides(alpha="none") +
+  annotate("text", x = 200, y = 0.9, label = sprintf("p-value = %.4f", p_value), hjust = 1) +
+  theme(legend.position = "top",
+        plot.margin = margin(10, 10, 10, 10))
+
+DNA_mass
+
+
+```
+
+
+## Supplemental Figure 4B and D: RNA-seq linear regression plots of the dose analysis
+
+```{r RNA linear regression dose analysis}
+
+# tetracycline ARG richness
+
+RNA_num <- ggplot(RNA_doses %>% group_by(doxy_comb, num_tet) %>% add_count(num_tet, name = "count_num"),
+       aes(x=doxy_comb, y=num_tet)) + 
+  geom_point(aes(color=dose_cat, size=count_num, alpha=0.9)) +
+  scale_color_manual(values = c("dimgray","darkseagreen3","#29AF7FFF","#1F968BFF"), na.value="gray") +
+  scale_y_continuous(expand = c(0, 0), breaks = seq(0, 12, 2),  limits = c(0, 12)) +
+  scale_x_continuous(expand=c(0,0)) + 
+  xlab("\nDoxycycline doses") + ylab("Tetracycline ARG richness\n") +
+  coord_cartesian(clip="off") +
+  geom_smooth(method = "lm", se=TRUE, color="black", alpha=0.3) +
+  scale_size(range = c(2,5),
+             breaks = c(1, 5, 10),
+             labels = c(1, 5, 10)) +
+  labs(color="Doxycycline doses", size="Number of samples") +
+  guides(color=guide_legend(order = 1), size=guide_legend(order = 2), alpha="none") +
+  geom_text(x = 200, y = 11.5, hjust=1, label = lm_eqn(RNA_doses, RNA_doses$num_tet), parse = TRUE) +
+  geom_text(x = 200, y = 10.75, hjust=1, label = lm_pvalue(RNA_doses, RNA_doses$num_tet), parse = TRUE) +
+  theme(legend.position = "top",
+        legend.box = "vertical",
+        legend.margin = margin(-7, 0, 0, 0),
+        plot.margin = margin(10, 10, 10, 10))
+
+RNA_num
+
+# tetracycline ARG proportion to resistome mass
+
+Tetracycline <- RNA_doses %>% mutate(tetmp = sum_tet_AMR_mass_perc/100) %>% select(doxy_comb, tetmp, dose_cat)
+line <- gamlss(tetmp ~ doxy_comb, family= BEINF, data = Tetracycline)
+
+# Predict values with confidence intervals
+predicted <- predict(line, type="response", se.fit=TRUE)
+Tetracycline$predicted <- predicted$fit
+Tetracycline$se_fit <- predicted$se.fit
+
+# Calculate confidence intervals (e.g., 95% confidence interval)
+Tetracycline$lower_ci <- Tetracycline$predicted - 1.96 * Tetracycline$se_fit
+Tetracycline$upper_ci <- Tetracycline$predicted + 1.96 * Tetracycline$se_fit
+
+# Using summary(model) to extract relevant statistics for p-value
+summary_model <- summary(line)
+p_value <- summary_model[2,4]
+
+RNA_mass <- ggplot(Tetracycline, aes(x=doxy_comb)) + 
+  geom_point(aes(y = tetmp, color=dose_cat, alpha=0.9), size = 3, position = position_jitterdodge()) +
+  scale_color_manual(values = c("dimgray","darkseagreen3","#29AF7FFF","#1F968BFF"), na.value="gray") +
+  scale_y_continuous(expand = c(0, 0), breaks = seq(0, 1, 0.2),  limits = c(0, 1)) +
+  scale_x_continuous(expand=c(0,0)) + 
+  xlab("\nDoxycycline doses") + ylab("Tetracycline ARG proportion of the resistome mass\n") +
+  coord_cartesian(clip="off") +
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), fill = "gray", alpha = 0.5)  + # Confidence intervals
+  geom_line(aes(y = predicted), color = 'black') +  # Fitted line
+  labs(color="Doxycycline doses") +
+  guides(alpha="none") +
+  annotate("text", x = 200, y = 0.9, label = sprintf("p-value = %.4f", p_value), hjust = 1) +
+  theme(legend.position = "top",
+        plot.margin = margin(10, 10, 10, 10))
+
+RNA_mass
+
+
+
+```
 

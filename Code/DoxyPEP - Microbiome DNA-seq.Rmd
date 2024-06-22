@@ -21,8 +21,11 @@ library(vegan)
 library(scales)
 library(DESeq2)
 library(ggrepel)
+library(metagenomeSeq)
+library(ALDEx2)
 
 rename <- dplyr::rename
+select <- dplyr::select
 
 ```
 
@@ -73,17 +76,14 @@ ddsdp = readRDS("../Inputs/Microbiome/DNA/dds_object_doxy_genus.rds")
 
 reports_filterbg_padj <- read.csv("../Inputs/Microbiome/DNA/microbiome_reports.csv", header=TRUE)
 
-reports_filterbg_species_padj <- read.csv("../Inputs/Microbiome/DNA/microbiome_reports_species.csv", header=TRUE)
-
-
 
 ```
 
 # --------------------
-# RESULTS: FIGURES
+# RESULTS: SUPPLEMENTAL FIGURES
 
 
-## Figure 5A: Microbial mass
+## Supplemental Figure 5A: Microbial mass
 
 ```{r microbial mass}
 ### wrangle data ###
@@ -101,9 +101,9 @@ reports_6<-reports_5 %>% mutate(arm = case_when(arm=="SOC" ~"Standard of care", 
   mutate(arm = factor(arm,levels=c("Standard of care","Doxy-PEP"))) %>% 
   mutate(visitcode = case_when(visitcode=="0" ~"Day 0", visitcode=="6" ~ "Month 6")) %>%
   mutate(visitcode = factor(visitcode,levels=c("Day 0","Month 6"))) %>%
-  select(sample_name,visitcode,arm,norm_bacterial_mass2)
+  select(sample_name, visitcode, arm, norm_bacterial_mass2)
 
-
+  
 ### stats ###
 stat.test_byvisit <-reports_6 %>% 
   mutate(visitcode=as.character(visitcode)) %>% 
@@ -133,7 +133,7 @@ stat.test <- stat.test_byvisit %>%
                              TRUE ~ y.position-3))
 
 
-### PUBLICATION FIGURE 5A ###
+### PUBLICATION FIGURE ###
 
 p<-ggplot(reports_6, aes(x=as.character(visitcode), y=norm_bacterial_mass2, color=arm)) +
   scale_color_manual(values = c("#440154FF","#29AF7FFF"), na.value="gray") +
@@ -149,7 +149,7 @@ p
 
 ```
 
-## Figure 5B: Alpha diversity
+## Supplemental Figure 5C: Alpha diversity
 
 ``` {r alpha div}
 
@@ -220,7 +220,7 @@ p
 
 ```
 
-## Figure 5C: Beta diversity between DP and SOC arms at Month 6
+## Supplemental Figure 5E: Beta diversity between DP and SOC arms at Month 6
 
 ```{r beta div month 6 DP vs SOC}
 ### Bacteria ###
@@ -266,57 +266,16 @@ NMDS_int<-ggplot(plot %>% mutate(arm=factor(arm, levels=c("SOC","DP"))),aes(NMDS
   scale_color_manual(labels=c("SOC","DP"), values=c("#440154FF","#29AF7FFF")) +
   scale_fill_manual(labels=c("SOC","DP"), values=c("#440154FF","#29AF7FFF")) +
   annotate("text", x=-1, y=-0.1, label="Standard of Care", hjust = 1, color=c("#440154FF"), size=6) +
-  annotate("text", x=-0.8, y=0.6, label="Doxy-PEP", hjust = 1, color=c("#29AF7FFF"), size=6) +
+  annotate("text", x=0.75, y=0.8, label="Doxy-PEP", hjust = 1, color=c("#29AF7FFF"), size=6) +
   annotate("text", x=-0.5, y=1.4, label=paste("PERMANOVA p-value 0.55"), hjust = 0, size=6) +
                 theme(legend.position="none")
 NMDS_int
 
-```
-
-## Figure 5D: Differential abundance over time in DP arm
-
-```{r deseq}
-
-dds = DESeq(ddsdp)
-resDEdp=results(dds,cooksCutoff=FALSE, contrast=c("visitcode","6","0"))
-
-# order the results by log fold change
-resDEdp=resDEdp[order(resDEdp$log2FoldChange,decreasing = T),]
-
-#thresholds
-min_lfc = 1 
-max_padj = 0.05
-min_basemean = 250
-
-resDEdp_filtered = resDEdp[resDEdp$baseMean > min_basemean,]
 
 
-DEframedp = data.frame(rownames(resDEdp_filtered))
-DEframedp = cbind(DEframedp, resDEdp_filtered$log2FoldChange,resDEdp_filtered$padj)
-colnames(DEframedp) = c("taxon","log2FoldChange","padj")
-
-
-DEframedp$diffexpressed = "NoChange"
-DEframedp$diffexpressed[DEframedp$log2FoldChange > min_lfc & DEframedp$padj < max_padj] = "Up"
-DEframedp$diffexpressed[DEframedp$log2FoldChange < -min_lfc & DEframedp$padj < max_padj] = "Down"
-DEframedp$delabel = NA
-DEframedp<-DEframedp %>% mutate(delabel= case_when(diffexpressed!="NoChange"~ taxon))
-
-doxypep_de <- 
-ggplot(data=DEframedp, aes(x=log2FoldChange, y=-log10(padj), col=diffexpressed, label=delabel)) +
-        geom_point() + 
-        theme_minimal() +
-        geom_text_repel(size=3) +
-        scale_color_manual(values=c("blue", "black", "red")) +
-        geom_vline(xintercept=c(-min_lfc, min_lfc), col="black") +
-        geom_hline(yintercept=-log10(max_padj), col="black")
 
 ```
 
-
-
-# --------------------
-# RESULTS: SUPPLEMENTAL FIGURES
 
 ## Supplemental Figure 6: Pathogens of interest in DP arm
 
@@ -395,4 +354,107 @@ p
 ```
 
 
+# --------------------
+# RESULTS: DIFFERENTIAL ABUNDANCE
 
+## Differential abundance over time in DP arm
+
+```{r deseq}
+
+dds = DESeq(ddsdp)
+resDEdp=results(dds,cooksCutoff=FALSE, contrast=c("visitcode","6","0"))
+
+# order the results by log fold change
+resDEdp=resDEdp[order(resDEdp$log2FoldChange,decreasing = T),]
+
+#thresholds
+min_lfc = 1 
+max_padj = 0.05
+min_basemean = 250
+
+resDEdp_filtered = resDEdp[resDEdp$baseMean > min_basemean,]
+
+
+DEframedp = data.frame(rownames(resDEdp_filtered))
+DEframedp = cbind(DEframedp, resDEdp_filtered$log2FoldChange,resDEdp_filtered$padj)
+colnames(DEframedp) = c("taxon","log2FoldChange","padj")
+
+
+DEframedp$diffexpressed = "NoChange"
+DEframedp$diffexpressed[DEframedp$log2FoldChange > min_lfc & DEframedp$padj < max_padj] = "Up"
+DEframedp$diffexpressed[DEframedp$log2FoldChange < -min_lfc & DEframedp$padj < max_padj] = "Down"
+DEframedp$delabel = NA
+DEframedp<-DEframedp %>% mutate(delabel= case_when(diffexpressed!="NoChange"~ taxon))
+
+doxypep_de <- 
+ggplot(data=DEframedp, aes(x=log2FoldChange, y=-log10(padj), col=diffexpressed, label=delabel)) +
+        geom_point() + 
+        theme_minimal() +
+        geom_text_repel(size=3) +
+        scale_color_manual(values=c("blue", "black", "red")) +
+        geom_vline(xintercept=c(-min_lfc, min_lfc), col="black") +
+        geom_hline(yintercept=-log10(max_padj), col="black")
+
+DEframedp %>% filter(padj<=0.05)
+
+```
+
+
+```{r metagenomeseq}
+
+da_mgs_md <- metadata %>%
+  filter(sample_name %in% reports_6$sample_name) %>%
+  filter(arm=="DP")
+rownames(da_mgs_md) <- da_mgs_md$sample_name
+
+da_mgsdf <- reports_filterbg_padj %>% select(sample_name, genus_tax_id, nt_count) %>%
+  filter(sample_name %in% da_mgs_md$sample_name) %>%
+  group_by(sample_name, genus_tax_id) %>% summarise(count=sum(nt_count)) %>% ungroup() %>%
+  pivot_wider(names_from = sample_name, values_from = count, values_fill = list(count = 0)) %>%
+  column_to_rownames("genus_tax_id")
+
+
+obj <- newMRexperiment(da_mgsdf)
+p <- cumNormStatFast(obj)
+obj <- cumNorm(obj, p = p)
+res <- fitFeatureModel(obj, model.matrix(~ visitcode, data = da_mgs_md))
+
+# Extract results
+results <- MRfulltable(res)
+results.adj <- MRfulltable(res) %>% filter(adjPvalues<=0.05)
+
+# no significant bacterial genera after adjustment using BH
+
+```
+```{r ALDEx2}
+
+# Prepare the data for ALDEx2
+
+aldex2_md <- metadata %>%
+  filter(sample_name %in% reports_6$sample_name) %>%
+  filter(arm=="DP")
+rownames(aldex2_md) <- aldex2_md$sample_name
+
+aldex2_mgsdf <- reports_filterbg_padj %>% select(sample_name, genus_tax_id, nt_count) %>%
+  filter(sample_name %in% aldex2_md$sample_name) %>%
+  group_by(sample_name, genus_tax_id) %>% summarise(count=sum(nt_count)) %>% ungroup() %>%
+  pivot_wider(names_from = sample_name, values_from = count, values_fill = list(count = 0)) %>%
+  column_to_rownames("genus_tax_id")
+
+conds <- aldex2_md$visitcode
+
+# Perform CLR transformation and Monte Carlo sampling
+aldex_data <- aldex.clr(aldex2_mgsdf, conds, mc.samples = 128, denom = "all")
+
+# Perform differential abundance testing
+aldex_results <- aldex.ttest(aldex_data)
+
+# Add effect size and summary statistics
+aldex_effect <- aldex.effect(aldex_data)
+aldex_summary <- cbind(aldex_results, aldex_effect)
+
+aldex_summary_adj <- aldex_summary %>% filter(we.eBH<=0.05)
+
+# no significant bacterial genera after adjustment using BH
+
+```

@@ -1,0 +1,212 @@
+---
+title: "Corrplot Code"
+author: "Abigail Glascock"
+date: "2024-05-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+### Load Packages ###
+library(tidyverse)
+library(corrplot)
+library(ggcorrplot)
+
+```
+
+# IMPORTATION DATA CLEANING
+
+```{r importation}
+# Identify SOC/Doxy 0/6 samples #
+metadata<-read.csv("../Inputs/final_sample_0116.csv", header=TRUE) %>% filter(paired=="Y")
+doxy0<-metadata %>% filter(arm=="DP",visitcode=="Day 0") %>% select(sample_name) %>% 
+  filter(!is.na(sample_name)) %>% distinct()
+doxy6<-metadata %>% filter(arm=="DP",visitcode=="Month 6") %>% select(sample_name) %>% 
+  filter(!is.na(sample_name)) %>% distinct()
+soc0<-metadata %>% filter(arm=="SOC",visitcode=="Day 0") %>% select(sample_name) %>% 
+  filter(!is.na(sample_name)) %>% distinct()
+soc6<-metadata %>% filter(arm=="SOC",visitcode=="Month 6") %>% select(sample_name) %>% 
+  filter(!is.na(sample_name)) %>% distinct()
+
+
+#### Gather bacterial data ####
+bact_data<-read.csv("../Inputs/Corr Plot/bacterial_genera_dna_corrplot.csv", header=TRUE) %>%
+  mutate(sample_name=toupper(sample_name)) %>%
+  filter(sample_name %in% metadata$sample_name)
+
+#### Gather AMR data ####
+amr_data<-read.csv("../Inputs/Resistome/final_AMR_0116.csv", header=TRUE) %>%
+  filter(sample_name %in% metadata$sample_name)
+amr_noneg<-amr_data %>% filter(!grepl("NTC|NEC|EMPTY",sample_name)) %>% filter(read_coverage_breadth>=5, seq=="DNA")
+
+
+```
+
+# DATA CLEANING
+
+```{r data cleaning, warning=FALSE}
+
+# Trim bacterial data to top 50 Doxy/SOC #
+bact_trimmed<-bact_data %>% filter(sample_name %in% doxy0$sample_name | sample_name %in% doxy6$sample_name | sample_name %in% soc0$sample_name | sample_name %in% soc6$sample_name)
+microbes <-bact_trimmed[c(2, 3:length(bact_trimmed))]
+tdf<-t(microbes)
+data<-as.data.frame(tdf)
+with_total<-data %>% mutate(sum = rowSums(.)) %>% arrange(desc(sum)) %>% do(head(., n=50))
+trimmed_list_microbes<-rownames(with_total)
+top50_data<-bact_trimmed %>% select(sample_name, trimmed_list_microbes)
+
+bact_genus_doxy<-top50_data %>% filter(sample_name %in% doxy0$sample_name | sample_name %in% doxy6$sample_name)
+bact_genus_soc<-top50_data %>% filter(sample_name %in% soc0$sample_name | sample_name %in% soc6$sample_name)
+
+
+### filter genes to only tetracycline-specific and pull for all samples ###
+amr_tet <- amr_noneg %>% filter(abx_class=="tetracycline") %>% mutate(orig_sample_name=toupper(orig_sample_name))
+amr_wide<-amr_tet %>% pivot_wider(names_from = gene_name, values_from = dpm, id_cols = orig_sample_name, values_fill = 0)
+
+### subset amr doxy ###
+amr_doxy<-amr_wide %>% filter(orig_sample_name %in% doxy0$sample_name| orig_sample_name %in% doxy6$sample_name)
+genes <-amr_doxy[c(2, 3:length(amr_doxy))]
+
+### subset amr soc ###
+amr_soc<-amr_wide %>% filter(orig_sample_name %in% soc0$sample_name| orig_sample_name %in% soc6$sample_name)
+genes_soc <-amr_soc[c(2, 3:length(amr_soc))]
+
+# format gene names #
+formatted_genes<-genes %>% mutate(EmrK=`EMRK`, EmrY=`EMRY`, MdfA = `ESCHERICHIA COLI MDFA`, MepA=`MEPA`, MexK=`MEXK`, MexL=`MEXL`,`Tet(32)`=`TET(32)`, `Tet(33)`=`TET(33)`, `Tet(37)`=`TET(37)`, `Tet(38)`=`TET(38)`, `Tet(40)`=`TET(40)`, `Tet(44)`=`TET(44)`, `Tet(A)`=`TET(A)`, `TetA(46)`= `TETA(46)`, `TetA(60)`=`TETA(60)`, `TetA(P)` = `TETA(P)`, `Tet(B)`=`TET(B)`, `TetB(46)`= `TETB(46)`, `TetB(P)`= `TETB(P)`, `Tet(D)`=`TET(D)`, `Tet(K)`=`TET(K)`, `Tet(L)`=`TET(L)`,`Tet(M)`=`TET(M)`,`Tet(O)`=`TET(O)`, `Tet(O/32/O)`=`TET(O/32/O)`, `Tet(O/M/O)`=`TET(O/M/O)`,`Tet(O/W)`=`TET(O/W)`, `Tet(O/W/32/O)`=`TET(O/W/32/O)`, `Tet(O/W/O)`=`TET(O/W/O)`, `Tet(Q)`=`TET(Q)`, `Tet(S)`=`TET(S)`, `Tet(T)`=`TET(T)`, `Tet(W)`=`TET(W)`, `Tet(W/32/O)`=`TET(W/32/O)`,`Tet(W/N/W)`=`TET(W/N/W)`, `Tet(X)`=`TET(X)`+ `TET(X1)` + `TET(X3)` + `TET(X4)`+ `TET(X5)`, `Tet(Z)`=`TET(Z)`)
+
+# collapse genes doxy- revised after seeing the results of the plot # 
+collapsed_genes<-formatted_genes %>% select('EmrK', 'EmrY', 'MdfA', 'MepA', 'MexK', 'MexL', 'Tet(32)', 'Tet(33)', 'Tet(37)', 'Tet(38)', 'Tet(40)','Tet(44)','Tet(A)', 'TetA(46)', 'TetA(60)', 'TetA(P)', 'Tet(B)', 'TetB(46)', 'TetB(P)', 'Tet(D)', 'Tet(K)', 'Tet(L)', 'Tet(M)', 'Tet(O)', 'Tet(O/32/O)', 'Tet(O/M/O)', 'Tet(O/W)', 'Tet(O/W/32/O)', 'Tet(O/W/O)', 'Tet(Q)', 'Tet(S)', 'Tet(T)', 'Tet(W)', 'Tet(W/32/O)', 'Tet(W/N/W)', 'Tet(X)', 'Tet(Z)')
+
+# format names in original file doxy # 
+formatted_amr_doxy<-amr_doxy %>%  mutate(EmrK=`EMRK`, EmrY=`EMRY`, MdfA = `ESCHERICHIA COLI MDFA`, MepA=`MEPA`, MexK=`MEXK`, MexL=`MEXL`,`Tet(32)`=`TET(32)`, `Tet(33)`=`TET(33)`, `Tet(37)`=`TET(37)`, `Tet(38)`=`TET(38)`, `Tet(40)`=`TET(40)`, `Tet(44)`=`TET(44)`, `Tet(A)`=`TET(A)`, `TetA(46)`= `TETA(46)`, `TetA(60)`=`TETA(60)`, `TetA(P)` = `TETA(P)`, `Tet(B)`=`TET(B)`, `TetB(46)`= `TETB(46)`, `TetB(P)`= `TETB(P)`, `Tet(D)`=`TET(D)`, `Tet(K)`=`TET(K)`, `Tet(L)`=`TET(L)`,`Tet(M)`=`TET(M)`,`Tet(O)`=`TET(O)`, `Tet(O/32/O)`=`TET(O/32/O)`, `Tet(O/M/O)`=`TET(O/M/O)`,`Tet(O/W)`=`TET(O/W)`, `Tet(O/W/32/O)`=`TET(O/W/32/O)`, `Tet(O/W/O)`=`TET(O/W/O)`, `Tet(Q)`=`TET(Q)`, `Tet(S)`=`TET(S)`, `Tet(T)`=`TET(T)`, `Tet(W)`=`TET(W)`, `Tet(W/32/O)`=`TET(W/32/O)`,`Tet(W/N/W)`=`TET(W/N/W)`, `Tet(X)`=`TET(X)`+ `TET(X1)` + `TET(X3)` + `TET(X4)`+ `TET(X5)`, `Tet(Z)`=`TET(Z)`)
+
+# format names in original file soc # 
+formatted_amr_soc<-amr_soc %>%  mutate(EmrK=`EMRK`, EmrY=`EMRY`, MdfA = `ESCHERICHIA COLI MDFA`, MepA=`MEPA`, MexK=`MEXK`, MexL=`MEXL`,`Tet(32)`=`TET(32)`, `Tet(33)`=`TET(33)`, `Tet(37)`=`TET(37)`, `Tet(38)`=`TET(38)`, `Tet(40)`=`TET(40)`, `Tet(44)`=`TET(44)`, `Tet(A)`=`TET(A)`, `TetA(46)`= `TETA(46)`, `TetA(60)`=`TETA(60)`, `TetA(P)` = `TETA(P)`, `Tet(B)`=`TET(B)`, `TetB(46)`= `TETB(46)`, `TetB(P)`= `TETB(P)`, `Tet(D)`=`TET(D)`, `Tet(K)`=`TET(K)`, `Tet(L)`=`TET(L)`,`Tet(M)`=`TET(M)`,`Tet(O)`=`TET(O)`, `Tet(O/32/O)`=`TET(O/32/O)`, `Tet(O/M/O)`=`TET(O/M/O)`,`Tet(O/W)`=`TET(O/W)`, `Tet(O/W/32/O)`=`TET(O/W/32/O)`, `Tet(O/W/O)`=`TET(O/W/O)`, `Tet(Q)`=`TET(Q)`, `Tet(S)`=`TET(S)`, `Tet(T)`=`TET(T)`, `Tet(W)`=`TET(W)`, `Tet(W/32/O)`=`TET(W/32/O)`,`Tet(W/N/W)`=`TET(W/N/W)`, `Tet(X)`=`TET(X)`+ `TET(X1)` + `TET(X3)` + `TET(X4)`+ `TET(X5)`, `Tet(Z)`=`TET(Z)`)
+
+# extract tet amr genes #
+amr_genes_doxy<-formatted_amr_doxy %>% mutate(sample_name = orig_sample_name) %>%
+  select(sample_name, colnames(collapsed_genes))
+amr_genes_soc<-formatted_amr_soc %>% mutate(sample_name = orig_sample_name) %>%
+  select(sample_name, colnames(collapsed_genes))
+
+##### grab top 50 info for bact and amr, separated by time point #
+bact0<-bact_genus_doxy %>% filter(sample_name %in% doxy0$sample_name) 
+bact6<-bact_genus_doxy %>% filter(sample_name %in% doxy6$sample_name) 
+amr0<-amr_genes_doxy %>% filter(sample_name %in% doxy0$sample_name) 
+amr6<-amr_genes_doxy %>% filter(sample_name %in% doxy6$sample_name) 
+bact0_soc<-bact_genus_soc %>% filter(sample_name %in% soc0$sample_name) 
+bact6_soc<-bact_genus_soc %>% filter(sample_name %in% soc6$sample_name) 
+amr0_soc<-amr_genes_soc %>% filter(sample_name %in% soc0$sample_name) 
+amr6_soc<-amr_genes_soc %>% filter(sample_name %in% soc6$sample_name) 
+
+### combine DFs ###
+combined_data_0 <- left_join(amr0, bact0, by = "sample_name")
+combined_data_6 <- left_join(amr6, bact6, by = "sample_name")
+combined_data_0_soc <- left_join(amr0_soc, bact0_soc, by = "sample_name")
+combined_data_6_soc <- left_join(amr6_soc, bact6_soc, by = "sample_name")
+
+# Replace all NA values with 0 in the resulting data frame
+cd0 <- combined_data_0 %>% mutate_all(~replace(., is.na(.), 0))
+cd6 <- combined_data_6 %>% mutate_all(~replace(., is.na(.), 0))
+cd0_soc <- combined_data_0_soc %>% mutate_all(~replace(., is.na(.), 0))
+cd6_soc <- combined_data_6_soc %>% mutate_all(~replace(., is.na(.), 0))
+
+# Calculate the correlation matrix
+cor_matrix0 <- cor(cd0[-c(0:1)], method = "spearman")[1:37, 38:87]
+cor_matrix6 <- cor(cd6[-c(0:1)], method = "spearman")[1:37, 38:87]
+
+# Create a data frame for p-values
+p_values0 <- cor_pmat(cd0[-c(0:1)])[1:37, 38:87]
+p_values6 <- cor_pmat(cd6[-c(0:1)])[1:37, 38:87]
+
+# Define a significance level (e.g., 0.05 for 5%)
+significance_level <- 0.05
+
+# Create a data frame for significant correlations
+significant_cor0 <- as.data.frame(cor_matrix0)
+significant_cor0[p_values0 > significance_level] <- NA
+significant_cor0 <- !is.na(significant_cor0)  # Convert to logical matrix
+
+# Create a data frame for significant correlations
+significant_cor6 <- as.data.frame(cor_matrix6)
+significant_cor6[p_values6 > significance_level] <- NA
+significant_cor6 <- !is.na(significant_cor6)  # Convert to logical matrix
+
+
+# reordering by mechanism of action
+
+row.order <- c("Tet(40)","Tet(L)","EmrY","EmrK","Tet(B)","MdfA","Tet(K)","Tet(A)","TetA(46)","TetB(46)","TetA(P)","MexK","Tet(33)","MexL","Tet(Z)","TetA(60)","MepA","Tet(38)","Tet(D)","Tet(X)","Tet(37)","Tet(M)","Tet(Q)","Tet(W)","Tet(O/M/O)","Tet(O)","Tet(W/N/W)","Tet(O/W/32/O)","Tet(32)", "Tet(O/32/O)","Tet(W/32/O)","Tet(O/W/O)","Tet(O/W)","Tet(44)","TetB(P)","Tet(T)","Tet(S)")
+
+cor_matrix6df <- as.data.frame(cor_matrix6) #%>% mutate(gene = rownames(.)) %>% mutate(gene = factor(gene, levels=row.order))
+cor_matrix6_fin <- as.matrix(cor_matrix6df[order(match(rownames(cor_matrix6df), row.order)), , drop = FALSE])
+p_values6df <- as.data.frame(p_values6)
+
+# Adjusting the p-values
+# Step 1: Flatten the matrix into a vector, retaining the row and column names
+p_values6v <- as.vector(p_values6)
+names(p_values6v) <- paste(rownames(p_values6df), colnames(p_values6df), sep = "_")
+
+# Step 2: Apply the desired correction method
+adjusted_p_values6f <- p.adjust(p_values6v, method = "fdr")
+
+# Step 3: Reshape the adjusted p-values back into the original matrix structure
+adjusted_p_matrix6f <- matrix(adjusted_p_values6f, nrow = nrow(p_values6df),
+                            dimnames = list(rownames(p_values6df), colnames(p_values6df)))
+p_values6_fin <- as.matrix(adjusted_p_matrix6f[order(match(rownames(adjusted_p_matrix6f), row.order)), , drop = FALSE])
+
+## Correlation plot for day0
+
+cor_matrix0df <- as.data.frame(cor_matrix0) 
+cor_matrix0_fin <- as.matrix(cor_matrix0df[order(match(rownames(cor_matrix0df), row.order)), , drop = FALSE])
+p_values0df <- as.data.frame(p_values0)
+
+# Adjusting the p-values
+# Step 1: Flatten the matrix into a vector, retaining the row and column names
+p_values0v <- as.vector(p_values0)
+names(p_values0v) <- paste(rownames(p_values0df), colnames(p_values0df), sep = "_")
+
+# Step 2: Apply the desired correction method
+adjusted_p_values0f <- p.adjust(p_values0v, method = "fdr")
+
+# Step 3: Reshape the adjusted p-values back into the original matrix structure
+adjusted_p_matrix0f <- matrix(adjusted_p_values0f, nrow = nrow(p_values0df),
+                            dimnames = list(rownames(p_values0df), colnames(p_values0df)))
+
+p_values0_fin <- as.matrix(adjusted_p_matrix0f[order(match(rownames(adjusted_p_matrix0f), row.order)), , drop = FALSE])
+
+```
+
+
+
+# --------------------
+# RESULTS: FIGURES
+
+## Supplemental Figure 7A and B: Correlation plot at D0 and M6
+
+```{r correlation with AMR at D0 and M6 - DNA seq}
+
+##### PUB FIGURES DOXY 0/6 tet v genus #### 
+day0corrplot <- corrplot(cor_matrix0_fin, method="circle", type='full', tl.col='black',  p.mat=p_values0_fin, sig.level = c(0.01, 0.05), pch.cex = 0.6, insig = 'label_sig', pch.col = 'grey20', tl.cex = 0.6, col=colorRampPalette(c("#3B9AB2","#EEEEEE","#F21A00"))(200), na.label=" ")
+
+month6corrplot <- corrplot(cor_matrix6_fin, method="circle", type='full', tl.col='black', p.mat=p_values6_fin, sig.level = c(0.01, 0.05), pch.cex = 0.6, insig = 'label_sig', pch.col = 'grey20', tl.cex = 0.6, col=colorRampPalette(c("#3B9AB2","#EEEEEE","#F21A00"))(200), na.label=" ")
+
+```
+
+## Supplemental Figure 7C: Change in correlation strength between at D0 and M6 in the DP arm
+
+```{r change in correlation coefficient from D0 to M6 in the DP arm}
+
+p_values6_sig <-p_values6_fin
+p_values6_sig[p_values6_sig>=0.05] <- NA_real_
+p_values6_sig[p_values6_sig<0.05] <- 1
+
+delta_matrix_pos <- (cor_matrix6_fin-cor_matrix0_fin)*p_values6_sig
+
+diffcorrplot <- corrplot(delta_matrix_pos, method="square", is.corr = FALSE, type='full', tl.col='black', pch.cex = 0.6, insig = 'label_sig', pch.col = 'grey20', tl.cex = 0.6, col=colorRampPalette(c("#3B9AB2","#EEEEEE","#F21A00"))(200), na.label=" ")
+
+```
+
+

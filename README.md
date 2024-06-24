@@ -23,6 +23,8 @@ DoxyPEP - Microbiome RNA-seq.Rmd is used to make supplemental figure 5b, d, f. T
 DoxyPEP - Correlation Plot.Rmd is used to analyze data at the human gene expression data and make supplemental figure 7. This code uses the following additional input files: 
 * [bacterial_genera_dna_corrplot.csv](../Inputs/Corr Plot/bacterial_genera_dna_corrplot.csv): bacteria genera data
 
+Each Rmd file can take 1-5 minutes to run.
+
 ## Outputs
 
 Final figures and supplemental figures generated from the above code are placed in this folder. Figures were exported from R as pdf files. Final edits to the figures (font standardization and panel layout) were made in Adobe Illustrator.

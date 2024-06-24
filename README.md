@@ -21,7 +21,7 @@ DoxyPEP - Microbiome RNA-seq.Rmd is used to make supplemental figure 5b, d, f. T
 * [microbiome_reports.csv](../Inputs/Microbiome/RNA/microbiome_reports.csv): CZID output of the bacterial microbiome (genera-level) data for RNA-sequencing, after background filtering with the negative binomial model
 
 DoxyPEP - Correlation Plot.Rmd is used to analyze data at the human gene expression data and make supplemental figure 7. This code uses the following additional input files: 
-* [bacterial_genera_dna_corrplot.csv](../Inputs/Corr Plot/bacterial_genera_dna_corrplot.csv): bacteria genera data
+* [bacterial_genera_dna_corrplot.csv](https://github.com/infectiousdisease-langelier-lab/doxy-PEP/blob/main/Input/Corr%20Plot/bacterial_genera_dna_corrplot.csv): bacteria genera data
 
 Each Rmd file can take 1-5 minutes to run.
 

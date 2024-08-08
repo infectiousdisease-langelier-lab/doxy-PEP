@@ -21,7 +21,7 @@ library(ggcorrplot)
 
 ```{r importation}
 # Identify SOC/Doxy 0/6 samples #
-metadata<-read.csv("../Inputs/final_sample_0116.csv", header=TRUE) %>% filter(paired=="Y")
+metadata<-read.csv("../Inputs/final_samples.csv", header=TRUE) %>% filter(paired=="Y")
 doxy0<-metadata %>% filter(arm=="DP",visitcode=="Day 0") %>% select(sample_name) %>% 
   filter(!is.na(sample_name)) %>% distinct()
 doxy6<-metadata %>% filter(arm=="DP",visitcode=="Month 6") %>% select(sample_name) %>% 
@@ -38,7 +38,7 @@ bact_data<-read.csv("../Inputs/Corr Plot/bacterial_genera_dna_corrplot.csv", hea
   filter(sample_name %in% metadata$sample_name)
 
 #### Gather AMR data ####
-amr_data<-read.csv("../Inputs/Resistome/final_AMR_0116.csv", header=TRUE) %>%
+amr_data<-read.csv("../Inputs/Resistome/final_AMR.csv") %>%
   filter(sample_name %in% metadata$sample_name)
 amr_noneg<-amr_data %>% filter(!grepl("NTC|NEC|EMPTY",sample_name)) %>% filter(read_coverage_breadth>=5, seq=="DNA")
 
@@ -63,15 +63,15 @@ bact_genus_soc<-top50_data %>% filter(sample_name %in% soc0$sample_name | sample
 
 
 ### filter genes to only tetracycline-specific and pull for all samples ###
-amr_tet <- amr_noneg %>% filter(abx_class=="tetracycline") %>% mutate(orig_sample_name=toupper(orig_sample_name))
-amr_wide<-amr_tet %>% pivot_wider(names_from = gene_name, values_from = dpm, id_cols = orig_sample_name, values_fill = 0)
+amr_tet <- amr_noneg %>% filter(abx_class=="tetracycline") %>% mutate(sample_name=toupper(sample_name))
+amr_wide<-amr_tet %>% pivot_wider(names_from = gene_name, values_from = dpm, id_cols = sample_name, values_fill = 0)
 
 ### subset amr doxy ###
-amr_doxy<-amr_wide %>% filter(orig_sample_name %in% doxy0$sample_name| orig_sample_name %in% doxy6$sample_name)
+amr_doxy<-amr_wide %>% filter(sample_name %in% doxy0$sample_name| sample_name %in% doxy6$sample_name)
 genes <-amr_doxy[c(2, 3:length(amr_doxy))]
 
 ### subset amr soc ###
-amr_soc<-amr_wide %>% filter(orig_sample_name %in% soc0$sample_name| orig_sample_name %in% soc6$sample_name)
+amr_soc<-amr_wide %>% filter(sample_name %in% soc0$sample_name| sample_name %in% soc6$sample_name)
 genes_soc <-amr_soc[c(2, 3:length(amr_soc))]
 
 # format gene names #
@@ -87,9 +87,9 @@ formatted_amr_doxy<-amr_doxy %>%  mutate(EmrK=`EMRK`, EmrY=`EMRY`, MdfA = `ESCHE
 formatted_amr_soc<-amr_soc %>%  mutate(EmrK=`EMRK`, EmrY=`EMRY`, MdfA = `ESCHERICHIA COLI MDFA`, MepA=`MEPA`, MexK=`MEXK`, MexL=`MEXL`,`Tet(32)`=`TET(32)`, `Tet(33)`=`TET(33)`, `Tet(37)`=`TET(37)`, `Tet(38)`=`TET(38)`, `Tet(40)`=`TET(40)`, `Tet(44)`=`TET(44)`, `Tet(A)`=`TET(A)`, `TetA(46)`= `TETA(46)`, `TetA(60)`=`TETA(60)`, `TetA(P)` = `TETA(P)`, `Tet(B)`=`TET(B)`, `TetB(46)`= `TETB(46)`, `TetB(P)`= `TETB(P)`, `Tet(D)`=`TET(D)`, `Tet(K)`=`TET(K)`, `Tet(L)`=`TET(L)`,`Tet(M)`=`TET(M)`,`Tet(O)`=`TET(O)`, `Tet(O/32/O)`=`TET(O/32/O)`, `Tet(O/M/O)`=`TET(O/M/O)`,`Tet(O/W)`=`TET(O/W)`, `Tet(O/W/32/O)`=`TET(O/W/32/O)`, `Tet(O/W/O)`=`TET(O/W/O)`, `Tet(Q)`=`TET(Q)`, `Tet(S)`=`TET(S)`, `Tet(T)`=`TET(T)`, `Tet(W)`=`TET(W)`, `Tet(W/32/O)`=`TET(W/32/O)`,`Tet(W/N/W)`=`TET(W/N/W)`, `Tet(X)`=`TET(X)`+ `TET(X1)` + `TET(X3)` + `TET(X4)`+ `TET(X5)`, `Tet(Z)`=`TET(Z)`)
 
 # extract tet amr genes #
-amr_genes_doxy<-formatted_amr_doxy %>% mutate(sample_name = orig_sample_name) %>%
+amr_genes_doxy<-formatted_amr_doxy %>% mutate(sample_name = sample_name) %>%
   select(sample_name, colnames(collapsed_genes))
-amr_genes_soc<-formatted_amr_soc %>% mutate(sample_name = orig_sample_name) %>%
+amr_genes_soc<-formatted_amr_soc %>% mutate(sample_name = sample_name) %>%
   select(sample_name, colnames(collapsed_genes))
 
 ##### grab top 50 info for bact and amr, separated by time point #

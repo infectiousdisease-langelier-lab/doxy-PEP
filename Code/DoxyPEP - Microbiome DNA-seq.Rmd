@@ -60,22 +60,14 @@ theme_set(theme_mine())
 
 ```{r set paths and read data}
 
-idseq_sample_overviews_path = "../Inputs/Microbiome/DNA/sample_overviews_combined.csv"
 
-### sequencing data ###
-read.csv(idseq_sample_overviews_path, stringsAsFactors=F) %>%
-  dplyr::mutate(
-    control=dplyr::case_when(
-      water_control=="Yes" ~ TRUE,
-      grepl("hela", sample_name, ignore.case=T) ~ TRUE,
-      TRUE ~ FALSE)) -> sample_overviews
-
-metadata<-read.csv("../Inputs/Microbiome/samples_w_ptid2.csv", header=TRUE)
+metadata<-read.csv("../Inputs/final_samples.csv", header=TRUE)
 
 ddsdp = readRDS("../Inputs/Microbiome/DNA/dds_object_doxy_genus.rds")
 
 reports_filterbg_padj <- read.csv("../Inputs/Microbiome/DNA/microbiome_reports.csv", header=TRUE)
 
+reports_filterbg_species_padj <- read.csv("../Inputs/Microbiome/DNA/microbiome_reports_species.csv", header=TRUE)
 
 ```
 
@@ -92,14 +84,14 @@ reports_2<-reports_filterbg_padj %>%
   dplyr::filter(category=="bacteria")%>%
   dplyr::filter(!grepl("NTC|NEC|EMPTY",sample_name)) %>%
   pivot_wider(names_from = name, values_from = nt_count, values_fill=0, id_cols = sample_name) 
-reports_3<-reports_2%>%mutate(sum_bact_count=rowSums(across(where(is.numeric))))
+reports_3<-reports_2%>%mutate(sum_bact_count=rowSums(across(where(is.numeric)))) %>%
+  mutate(sample_name=toupper(sample_name))
 reports_4<-left_join(reports_3,metadata,by="sample_name")
 reports_5<-reports_4 %>%
   mutate(million_reads=(total_reads/1000000)) %>%
   mutate(norm_bacterial_mass=(((sum_bact_count*25)/total_ercc_reads))/million_reads) %>% mutate(norm_bacterial_mass2=(((25*sum_bact_count)/total_ercc_reads))/million_reads)
 reports_6<-reports_5 %>% mutate(arm = case_when(arm=="SOC" ~"Standard of care", arm=="DP"~"Doxy-PEP")) %>% 
   mutate(arm = factor(arm,levels=c("Standard of care","Doxy-PEP"))) %>% 
-  mutate(visitcode = case_when(visitcode=="0" ~"Day 0", visitcode=="6" ~ "Month 6")) %>%
   mutate(visitcode = factor(visitcode,levels=c("Day 0","Month 6"))) %>%
   select(sample_name, visitcode, arm, norm_bacterial_mass2)
 
@@ -159,7 +151,7 @@ alpha_div<-reports_filterbg_padj %>%
   filter(p_adj<0.1) %>%
   pivot_wider(names_from = name, values_from = nt_rpm, values_fill = 0, id_cols = sample_name) %>%
   as.data.frame()
-rownames(alpha_div)<-alpha_div$sample_name
+rownames(alpha_div)<-toupper(alpha_div$sample_name)
 input<-alpha_div[,-1]
 
 
@@ -178,7 +170,6 @@ data3<-left_join(data2,inv2,by="sample_name")
 data4 <-data3 %>% filter(!grepl("NTC|NEC|EMPTY",sample_name)) %>% 
   mutate(arm = case_when(arm=="SOC" ~"Standard of care", arm=="DP" ~ "Doxy-PEP")) %>%
   mutate(arm = factor(arm,levels=c("Standard of care","Doxy-PEP"))) %>%
-  mutate(visitcode = case_when(visitcode=="0" ~"Day 0", visitcode=="6" ~ "Month 6")) %>%
   mutate(visitcode = factor(visitcode,levels=c("Day 0","Month 6"))) %>%
   filter(sample_name %in% reports_6$sample_name)
 
@@ -228,11 +219,12 @@ my_data<-reports_filterbg_padj %>%
   filter(nt_count>=10, nr_count>=1, nt_alignment_length >= 50) %>%
   filter(p_adj<0.1) %>%
   filter(category=="bacteria") %>%
-  dplyr::filter(!grepl("NTC|NEC|EMPTY",sample_name)) 
+  dplyr::filter(!grepl("NTC|NEC|EMPTY",sample_name)) %>%
+  mutate(sample_name=toupper(sample_name))
 
 combined_data<-left_join(my_data, metadata, by="sample_name")
 pruned_data<- combined_data %>%
-  filter(visitcode==6) %>%
+  filter(visitcode=="Month 6") %>%
   select(ptid, name, nt_rpm) %>%
   pivot_wider(names_from = name, values_from = nt_rpm) %>%
   mutate_if(is.numeric, ~replace_na(., 0)) 
@@ -287,11 +279,12 @@ data<-reports_filterbg_species_padj %>%
   filter(p_adj<0.1) %>%
   pivot_wider(names_from = name, values_from = nt_rpm, values_fill = 0, id_cols = sample_name) %>%
   as.data.frame()
-trimmed<-data %>% select(sample_name,`Chlamydia trachomatis`,`Neisseria gonorrhoeae`, `Mycoplasma genitalium`, `Clostridioides difficile`)
+trimmed<-data %>% select(sample_name,`Chlamydia trachomatis`,`Neisseria gonorrhoeae`, `Mycoplasma genitalium`, `Clostridioides difficile`) %>%
+  mutate(sample_name=toupper(sample_name))
 
 trimmed_2<-left_join(trimmed,metadata,by="sample_name")
 
-trimmed_3<-trimmed_2 %>% mutate(arm = case_when(arm=="SOC" ~"Standard of care", arm=="DP" ~ "Doxy-PEP")) %>% mutate(arm = factor(arm,levels=c("Standard of care","Doxy-PEP"))) %>% mutate(`Neisseria gonorrhoeae`=`Neisseria gonorrhoeae`+1) %>% mutate(visitcode = case_when(visitcode=="0" ~"Day 0", visitcode=="6" ~ "Month 6")) %>% mutate(visitcode = factor(visitcode,levels=c("Day 0","Month 6"))) %>% mutate(`Neisseria gonorrhoeae`=`Neisseria gonorrhoeae`+1) %>%
+trimmed_3<-trimmed_2 %>% mutate(arm = case_when(arm=="SOC" ~"Standard of care", arm=="DP" ~ "Doxy-PEP")) %>% mutate(arm = factor(arm,levels=c("Standard of care","Doxy-PEP"))) %>% mutate(`Neisseria gonorrhoeae`=`Neisseria gonorrhoeae`+1) %>% mutate(visitcode = factor(visitcode,levels=c("Day 0","Month 6"))) %>% mutate(`Neisseria gonorrhoeae`=`Neisseria gonorrhoeae`+1) %>%
   mutate(`Chlamydia trachomatis`=`Chlamydia trachomatis`+1) %>% mutate(`Mycoplasma genitalium`=`Mycoplasma genitalium`+1)
 
 
@@ -408,6 +401,7 @@ da_mgs_md <- metadata %>%
 rownames(da_mgs_md) <- da_mgs_md$sample_name
 
 da_mgsdf <- reports_filterbg_padj %>% select(sample_name, genus_tax_id, nt_count) %>%
+  mutate(sample_name=toupper(sample_name)) %>%
   filter(sample_name %in% da_mgs_md$sample_name) %>%
   group_by(sample_name, genus_tax_id) %>% summarise(count=sum(nt_count)) %>% ungroup() %>%
   pivot_wider(names_from = sample_name, values_from = count, values_fill = list(count = 0)) %>%
@@ -426,6 +420,8 @@ results.adj <- MRfulltable(res) %>% filter(adjPvalues<=0.05)
 # no significant bacterial genera after adjustment using BH
 
 ```
+
+
 ```{r ALDEx2}
 
 # Prepare the data for ALDEx2
@@ -436,6 +432,7 @@ aldex2_md <- metadata %>%
 rownames(aldex2_md) <- aldex2_md$sample_name
 
 aldex2_mgsdf <- reports_filterbg_padj %>% select(sample_name, genus_tax_id, nt_count) %>%
+  mutate(sample_name=toupper(sample_name)) %>%
   filter(sample_name %in% aldex2_md$sample_name) %>%
   group_by(sample_name, genus_tax_id) %>% summarise(count=sum(nt_count)) %>% ungroup() %>%
   pivot_wider(names_from = sample_name, values_from = count, values_fill = list(count = 0)) %>%

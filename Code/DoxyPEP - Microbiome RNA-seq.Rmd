@@ -62,22 +62,8 @@ theme_set(theme_mine())
 
 ```{r set paths and read data}
 
-idseq_sample_overviews_path = "../Inputs/Microbiome/RNA/sample_overviews_rna.csv"
-ngs_samples_path = "../Inputs/Microbiome/RNA/ngs_samples_rna.csv"
-
-### sequencing data ###
-read.csv(idseq_sample_overviews_path, stringsAsFactors=F) %>%
-  dplyr::mutate(
-    control=dplyr::case_when(
-      water_control=="Yes" ~ TRUE,
-      grepl("hela", sample_name, ignore.case=T) ~ TRUE,
-      TRUE ~ FALSE)) -> sample_overviews
-
-metadata<-read.csv("../Inputs/final_sample_0116.csv", header=TRUE)
+metadata<-read.csv("../Inputs/final_samples.csv", header=TRUE)
 meta <-metadata %>% filter(seq=="RNA")
-
-
-ptid<-read.csv("../Inputs/Microbiome/samples_w_ptid2.csv", header=TRUE)
 
 reports_filterbg_padj <- read.csv("../Inputs/Microbiome/RNA/microbiome_reports.csv", header=TRUE)
 
@@ -173,7 +159,7 @@ inv2<-inv %>% mutate(sample_name= rownames(inv)) %>% rename(inv_simpson='.') %>%
   mutate(sample_name=toupper(sample_name))
 
 ### attach onto metadata ###
-metadata<-meta %>% select(sample_name, InternalID, total_reads, total_ercc_reads, compression_ratio, batch, barcode, ptid, visitdate, visitcode_old, day0date, visitcode, arm)
+metadata<-meta %>% select(sample_name, total_reads, total_ercc_reads, ptid, visitcode, arm)
 data1<-left_join(metadata,shan,by="sample_name")
 data2<-left_join(data1,simp2,by="sample_name")
 data3<-left_join(data2,inv2,by="sample_name")

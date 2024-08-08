@@ -66,7 +66,7 @@ theme_set(theme_mine())
 ```{r importing data for analysis}
 
 # AMR gene-level dataset
-amr <- read.csv("../Inputs/Resistome/final_AMR_0116.csv") %>%
+amr <- read.csv("../Inputs/Resistome/final_AMR.csv") %>%
   filter(sample_pc=="patient") %>%
   mutate(arm = factor(arm, levels=c("SOC","DP"))) %>%
   mutate(abx_class = case_when(abx_class %in% c("fosfomycin", "fusidic acid", "mupirocin", "nitroimidazole","phenicol-oxazolidinone-tetracycline", "Other", "rifampin") ~ "Other",
@@ -79,7 +79,7 @@ RNA_amr <- amr %>% filter(seq=="RNA")
 
 
 # sample-level dataset
-samples <- read.csv("../Inputs/final_sample_0116.csv") %>%
+samples <- read.csv("../Inputs/final_samples.csv") %>%
   mutate(tet_mass=sum_AMR_mass_tet,
          tet_plus_mass= sum_AMR_mass_tet_plus - tet_mass,
          non_tet_mass = sum_AMR_mass - sum_AMR_mass_tet_plus) %>%
@@ -91,14 +91,13 @@ DNA_samples <- samples %>% filter(seq=="DNA")
 RNA_samples <- samples %>% filter(seq=="RNA")
 
 # person-level metadata
-metadata <- read.csv("../Inputs/final_metadata_0116.csv") %>%
+metadata <- read.csv("../Inputs/final_metadata.csv") %>%
   filter(sample_pc=="patient") %>%
   mutate(arm = factor(arm, levels=c("SOC","DP"))) %>%
-  select(-seq, -num_samples) %>%
   distinct()
 
-DNA_metadata <- metadata %>% filter(DNA==1)
-RNA_metadata <- metadata %>% filter(RNA==1)
+DNA_metadata <- metadata %>% filter(seq=="DNA")
+RNA_metadata <- metadata %>% filter(seq=="RNA")
 
 doxy_cat_ord <- c("0", "1-7", "8-49", "50-99", "100-200")
 
@@ -110,7 +109,6 @@ doxy_cat_ord <- c("0", "1-7", "8-49", "50-99", "100-200")
 
 
 ## Abx classes of interest datasets
-
 ```{r abx classes datasets}
 
 # DNA
@@ -121,7 +119,7 @@ DNA_massperc_table <- DNA_amr %>%
   mutate(mass_percent = abx_mass/sum_AMR_mass *100) %>%
   select(-abx_mass) %>%
   pivot_wider(names_from=abx_class, values_from = mass_percent) %>%
-  pivot_longer(cols = Aminoglycoside:Peptide, names_to = "abx_class", values_to = "mass_percent") %>%
+  pivot_longer(cols = Aminoglycoside:Glycopeptide, names_to = "abx_class", values_to = "mass_percent") %>%
   mutate_if(is.numeric, ~replace_na(., 0))
 
 DNA_abx_class_list <- DNA_massperc_table %>%
@@ -224,7 +222,6 @@ RNA_paired <- RNA_samples %>% filter(paired=="Y") %>%
 ```{r absolute AMR mass by visitcode dataset}
 
 samples_mass <- samples %>%
-  select(sample_name, arm, visitcode, seq, sum_AMR_mass, total_ercc_reads, total_reads) %>%
   pivot_longer(cols="sum_AMR_mass" , names_to = "mass_type", values_to = "mass") %>%
   mutate(across(mass, ~ ifelse(is.na(.), 0, .)))
 
@@ -282,7 +279,7 @@ DNA_metadata %>%
 DNA_metadata %>%
   group_by(hivstatus) %>%
   summarise(n = n()) %>% mutate(Freq = n/sum(n))
-chisq.test(DNA_metadata_housed$arm, DNA_metadata_housed$hivstatus, correct=FALSE)
+chisq.test(DNA_metadata$arm, DNA_metadata$hivstatus, correct=FALSE)
 
 RNA_metadata %>%
   group_by(arm, hivstatus) %>%
@@ -290,7 +287,7 @@ RNA_metadata %>%
 RNA_metadata %>%
   group_by(hivstatus) %>%
   summarise(n = n()) %>% mutate(Freq = n/sum(n))
-chisq.test(RNA_metadata_housed$arm, RNA_metadata_housed$hivstatus, correct=FALSE)
+chisq.test(RNA_metadata$arm, RNA_metadata$hivstatus, correct=FALSE)
 
 # CD4 count for those living with HIV at enrollment
 DNA_metadata_hiv <- DNA_metadata %>% filter(hivstatus==1) %>% mutate(cd4_avail = case_when(is.na(cd4_avail) ~ 0,
@@ -652,6 +649,8 @@ beta_diversity_genes<- DNA_amr %>%
   column_to_rownames("ptid")
 
 beta_div_metadata <- DNA_metadata %>% filter(ptid %in% rownames(beta_diversity_genes)) %>% arrange(ptid)
+
+DNA_metadata <- DNA_metadata %>% filter(ptid %in% rownames(beta_diversity_genes)) %>% arrange(ptid)
 
 beta_dist <- vegdist(beta_diversity_genes)
 

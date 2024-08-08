@@ -1,0 +1,160 @@
+"seq","ptid","arm","hivstatus","age","raceeth","cd4_avail","cd4_d0","sample_pc","num_samples","DNA","RNA"
+"DNA","80-29-0086-6","DP",1,35,"Non-Hispanic White",1,646,"patient",1,1,0
+"DNA","80-29-0026-1","SOC",1,38,"Non-Hispanic White",NA,NA,"patient",1,1,0
+"DNA","81-29-0031-2","DP",0,51,"Asian/Pacific Islander",NA,NA,"patient",1,1,1
+"DNA","81-29-0033-9","SOC",0,37,"Hispanic White",NA,NA,"patient",2,1,1
+"DNA","79-29-0027-1","SOC",0,51,"Non-Hispanic White",NA,NA,"patient",1,1,0
+"DNA","81-29-0048-2","DP",0,38,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"DNA","80-29-0063-5","DP",1,60,"Non-Hispanic White",1,1424,"patient",1,1,1
+"DNA","80-29-0067-4","SOC",1,49,"Non-Hispanic White",1,291,"patient",2,1,1
+"DNA","80-29-0035-6","SOC",1,56,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"DNA","79-29-0049-6","DP",0,47,"Hispanic White",NA,NA,"patient",2,1,1
+"DNA","80-29-0024-5","SOC",1,39,"Unknown",NA,NA,"patient",1,1,1
+"DNA","80-29-0011-2","DP",1,35,"Black/African American",NA,NA,"patient",1,1,1
+"DNA","79-29-0044-7","SOC",0,48,"Other/Multiracial",NA,NA,"patient",1,1,1
+"DNA","81-29-0074-8","SOC",0,39,"Asian/Pacific Islander",NA,NA,"patient",1,1,0
+"DNA","80-29-0055-9","DP",1,32,"Other/Multiracial",1,608,"patient",1,1,1
+"DNA","80-29-0039-1","SOC",1,39,"Non-Hispanic White",1,695,"patient",1,1,0
+"DNA","79-29-0010-6","SOC",0,23,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"DNA","79-29-0013-5","DP",0,57,"Hispanic White",NA,NA,"patient",1,1,1
+"DNA","78-29-0037-0","DP",1,38,"Hispanic White",1,378,"patient",1,1,0
+"DNA","79-29-0063-6","DP",0,33,"Non-Hispanic White",NA,NA,"patient",2,1,0
+"DNA","78-29-0047-6","SOC",1,30,"Hispanic White",1,934,"patient",2,1,1
+"DNA","81-29-0073-5","SOC",0,56,"Asian/Pacific Islander",NA,NA,"patient",1,1,1
+"DNA","78-29-0039-6","DP",1,60,"Black/African American",1,547,"patient",1,1,1
+"DNA","81-29-0065-5","DP",0,31,"Non-Hispanic White",NA,NA,"patient",1,1,0
+"DNA","79-29-0034-1","SOC",0,33,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"DNA","79-29-0018-9","DP",0,59,"Non-Hispanic White",NA,NA,"patient",1,1,0
+"DNA","81-29-0022-5","DP",0,30,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"DNA","78-29-0018-3","DP",0,62,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"DNA","80-29-0096-2","DP",0,36,"Other/Multiracial",NA,NA,"patient",1,1,0
+"DNA","81-29-0079-7","DP",0,35,"Asian/Pacific Islander",NA,NA,"patient",1,1,0
+"DNA","80-29-0101-5","DP",1,36,"Non-Hispanic White",1,889,"patient",2,1,1
+"DNA","81-29-0096-7","DP",0,28,"Non-Hispanic White",NA,NA,"patient",1,1,0
+"DNA","78-29-0035-1","DP",1,61,"Unknown",1,726,"patient",2,1,1
+"DNA","81-29-0012-8","DP",0,28,"Non-Hispanic White",NA,NA,"patient",1,1,0
+"DNA","81-29-0013-4","SOC",0,31,"Other/Multiracial",NA,NA,"patient",2,1,1
+"DNA","81-29-0092-6","SOC",0,27,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"DNA","79-29-0011-1","DP",0,29,"Hispanic White",NA,NA,"patient",2,1,1
+"DNA","79-29-0028-7","DP",0,55,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"DNA","78-29-0024-0","DP",0,29,"Non-Hispanic White",NA,NA,"patient",2,1,0
+"DNA","81-29-0066-8","DP",0,54,"Asian/Pacific Islander",NA,NA,"patient",2,1,0
+"DNA","80-29-0005-7","SOC",1,31,"Non-Hispanic White",NA,NA,"patient",2,1,0
+"DNA","81-29-0058-5","DP",0,31,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"DNA","80-29-0003-3","DP",1,64,"Other/Multiracial",NA,NA,"patient",2,1,1
+"DNA","78-29-0019-1","DP",0,42,"Asian/Pacific Islander",NA,NA,"patient",1,1,1
+"DNA","81-29-0059-8","SOC",0,53,"Other/Multiracial",NA,NA,"patient",2,1,1
+"DNA","81-29-0080-8","SOC",0,40,"Other/Multiracial",NA,NA,"patient",2,1,1
+"DNA","80-29-0062-2","DP",1,29,"Other/Multiracial",NA,NA,"patient",2,1,1
+"DNA","80-29-0059-3","DP",1,29,"Non-Hispanic White",1,963,"patient",2,1,1
+"DNA","80-29-0031-7","DP",1,47,"Non-Hispanic White",1,407,"patient",2,1,1
+"DNA","81-29-0057-3","SOC",0,31,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"DNA","81-29-0025-8","SOC",0,36,"Hispanic White",NA,NA,"patient",2,1,1
+"DNA","81-29-0008-7","DP",0,27,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"DNA","81-29-0072-2","DP",0,25,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"DNA","79-29-0003-2","SOC",0,28,"Asian/Pacific Islander",NA,NA,"patient",2,1,1
+"DNA","79-29-0029-5","DP",0,29,"Asian/Pacific Islander",NA,NA,"patient",2,1,1
+"DNA","78-29-0020-3","SOC",1,53,"Black/African American",1,1035,"patient",2,1,1
+"DNA","81-29-0019-1","SOC",0,42,"Hispanic White",NA,NA,"patient",2,1,1
+"DNA","78-29-0046-5","SOC",1,49,"Black/African American",1,726,"patient",2,1,1
+"DNA","81-29-0084-5","SOC",0,26,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"DNA","78-29-0007-1","DP",1,50,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"DNA","81-29-0071-1","DP",0,36,"Other/Multiracial",NA,NA,"patient",1,1,1
+"DNA","81-29-0116-7","DP",0,38,"Asian/Pacific Islander",NA,NA,"patient",1,1,0
+"DNA","81-29-0095-9","SOC",0,38,"Other/Multiracial",NA,NA,"patient",1,1,0
+"DNA","79-29-0048-8","DP",0,32,"Other/Multiracial",NA,NA,"patient",1,1,0
+"DNA","78-29-0030-5","DP",1,54,"Hispanic White",1,746,"patient",1,1,1
+"DNA","78-29-0033-9","DP",0,38,"Hispanic White",NA,NA,"patient",1,1,0
+"DNA","79-29-0059-2","DP",0,33,"Hispanic White",NA,NA,"patient",1,1,1
+"DNA","79-29-0038-2","DP",0,29,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"DNA","78-29-0045-7","DP",1,36,"Hispanic White",1,501,"patient",1,1,0
+"DNA","79-29-0037-6","DP",0,38,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"DNA","81-29-0108-5","DP",0,41,"Non-Hispanic White",NA,NA,"patient",1,1,0
+"DNA","81-29-0050-7","DP",0,38,"Asian/Pacific Islander",NA,NA,"patient",1,1,0
+"DNA","81-29-0061-6","DP",0,43,"Non-Hispanic White",NA,NA,"patient",1,1,0
+"DNA","78-29-0025-8","DP",1,63,"Non-Hispanic White",1,490,"patient",1,1,1
+"DNA","78-29-0043-3","DP",1,68,"Non-Hispanic White",1,621,"patient",1,1,1
+"DNA","78-29-0060-1","DP",1,43,"Other/Multiracial",1,418,"patient",2,1,1
+"DNA","78-29-0066-8","SOC",1,61,"Non-Hispanic White",1,743,"patient",2,1,1
+"DNA","78-29-0064-3","SOC",1,37,"Non-Hispanic White",1,434,"patient",1,1,0
+"DNA","78-29-0059-8","DP",1,43,"Hispanic White",1,812,"patient",1,1,1
+"DNA","79-29-0030-4","SOC",0,57,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"DNA","80-29-0090-7","DP",1,38,"Non-Hispanic White",1,803,"patient",1,1,1
+"DNA","80-29-0107-8","DP",0,34,"Hispanic White",NA,NA,"patient",1,1,1
+"DNA","80-29-0079-2","DP",1,50,"Non-Hispanic White",1,899,"patient",1,1,1
+"DNA","81-29-0112-6","DP",0,39,"Non-Hispanic White",NA,NA,"patient",2,1,0
+"DNA","80-29-0074-3","SOC",1,45,"Other/Multiracial",1,197,"patient",1,1,1
+"DNA","80-29-0050-2","DP",1,35,"Hispanic White",1,722,"patient",1,1,1
+"DNA","81-29-0114-4","DP",0,36,"Unknown",NA,NA,"patient",1,1,0
+"DNA","80-29-0073-0","DP",1,61,"Non-Hispanic White",1,638,"patient",1,1,0
+"DNA","81-29-0089-9","DP",0,30,"Non-Hispanic White",NA,NA,"patient",1,1,0
+"RNA","81-29-0058-5","DP",0,31,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"RNA","81-29-0013-4","SOC",0,31,"Other/Multiracial",NA,NA,"patient",1,1,1
+"RNA","78-29-0019-1","DP",0,42,"Asian/Pacific Islander",NA,NA,"patient",1,1,1
+"RNA","81-29-0031-2","DP",0,51,"Asian/Pacific Islander",NA,NA,"patient",1,1,1
+"RNA","80-29-0003-3","DP",1,64,"Other/Multiracial",NA,NA,"patient",1,1,1
+"RNA","81-29-0080-8","SOC",0,40,"Other/Multiracial",NA,NA,"patient",2,1,1
+"RNA","81-29-0073-5","SOC",0,56,"Asian/Pacific Islander",NA,NA,"patient",2,1,1
+"RNA","80-29-0059-3","DP",1,29,"Non-Hispanic White",1,963,"patient",1,1,1
+"RNA","81-29-0033-9","SOC",0,37,"Hispanic White",NA,NA,"patient",2,1,1
+"RNA","80-29-0031-7","DP",1,47,"Non-Hispanic White",1,407,"patient",2,1,1
+"RNA","81-29-0025-8","SOC",0,36,"Hispanic White",NA,NA,"patient",2,1,1
+"RNA","81-29-0072-2","DP",0,25,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"RNA","80-29-0063-5","DP",1,60,"Non-Hispanic White",1,1424,"patient",1,1,1
+"RNA","80-29-0035-6","SOC",1,56,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"RNA","81-29-0019-1","SOC",0,42,"Hispanic White",NA,NA,"patient",1,1,1
+"RNA","79-29-0049-6","DP",0,47,"Hispanic White",NA,NA,"patient",2,1,1
+"RNA","80-29-0024-5","SOC",1,39,"Unknown",NA,NA,"patient",1,1,1
+"RNA","80-29-0011-2","DP",1,35,"Black/African American",NA,NA,"patient",1,1,1
+"RNA","78-29-0046-5","SOC",1,49,"Black/African American",1,726,"patient",2,1,1
+"RNA","81-29-0084-5","SOC",0,26,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"RNA","78-29-0007-1","DP",1,50,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"RNA","81-29-0071-1","DP",0,36,"Other/Multiracial",NA,NA,"patient",1,1,1
+"RNA","81-29-0059-8","SOC",0,53,"Other/Multiracial",NA,NA,"patient",1,1,1
+"RNA","80-29-0062-2","DP",1,29,"Other/Multiracial",NA,NA,"patient",1,1,1
+"RNA","80-29-0055-9","DP",1,32,"Other/Multiracial",1,608,"patient",1,1,1
+"RNA","81-29-0008-7","DP",0,27,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"RNA","81-29-0057-3","SOC",0,31,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"RNA","81-29-0048-2","DP",0,38,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"RNA","79-29-0003-2","SOC",0,28,"Asian/Pacific Islander",NA,NA,"patient",1,1,1
+"RNA","79-29-0010-6","SOC",0,23,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"RNA","79-29-0013-5","DP",0,57,"Hispanic White",NA,NA,"patient",1,1,1
+"RNA","78-29-0030-5","DP",1,54,"Hispanic White",1,746,"patient",1,1,1
+"RNA","78-29-0047-6","SOC",1,30,"Hispanic White",1,934,"patient",2,1,1
+"RNA","78-29-0035-1","DP",1,61,"Unknown",1,726,"patient",1,1,1
+"RNA","78-29-0039-6","DP",1,60,"Black/African American",1,547,"patient",2,1,1
+"RNA","80-29-0071-6","DP",1,56,"Non-Hispanic White",1,724,"patient",1,0,1
+"RNA","79-29-0059-2","DP",0,33,"Hispanic White",NA,NA,"patient",1,1,1
+"RNA","79-29-0038-2","DP",0,29,"Non-Hispanic White",NA,NA,"patient",2,1,1
+"RNA","80-29-0029-9","DP",1,74,"Non-Hispanic White",NA,NA,"patient",1,0,1
+"RNA","80-29-0056-7","DP",1,43,"Non-Hispanic White",1,795,"patient",1,0,1
+"RNA","81-29-0070-6","DP",0,27,"Unknown",NA,NA,"patient",1,0,1
+"RNA","81-29-0022-5","DP",0,30,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"RNA","80-29-0032-8","DP",0,28,"Non-Hispanic White",NA,NA,"patient",1,0,1
+"RNA","78-29-0025-8","DP",1,63,"Non-Hispanic White",1,490,"patient",1,1,1
+"RNA","78-29-0018-3","DP",0,62,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"RNA","78-29-0043-3","DP",1,68,"Non-Hispanic White",1,621,"patient",1,1,1
+"RNA","78-29-0060-1","DP",1,43,"Other/Multiracial",1,418,"patient",1,1,1
+"RNA","79-29-0037-6","DP",0,38,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"RNA","79-29-0029-5","DP",0,29,"Asian/Pacific Islander",NA,NA,"patient",1,1,1
+"RNA","79-29-0034-1","SOC",0,33,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"RNA","78-29-0050-7","DP",1,57,"Non-Hispanic White",1,468,"patient",1,0,1
+"RNA","78-29-0059-8","DP",1,43,"Hispanic White",1,812,"patient",2,1,1
+"RNA","78-29-0020-3","SOC",1,53,"Black/African American",1,1035,"patient",1,1,1
+"RNA","79-29-0011-1","DP",0,29,"Hispanic White",NA,NA,"patient",1,1,1
+"RNA","78-29-0049-0","DP",0,50,"Hispanic White",NA,NA,"patient",1,0,1
+"RNA","78-29-0054-9","SOC",1,37,"Non-Hispanic White",1,1084,"patient",1,0,1
+"RNA","79-29-0044-7","SOC",0,48,"Other/Multiracial",NA,NA,"patient",1,1,1
+"RNA","79-29-0028-7","DP",0,55,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"RNA","79-29-0030-4","SOC",0,57,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"RNA","80-29-0090-7","DP",1,38,"Non-Hispanic White",1,803,"patient",1,1,1
+"RNA","80-29-0107-8","DP",0,34,"Hispanic White",NA,NA,"patient",1,1,1
+"RNA","78-29-0066-8","SOC",1,61,"Non-Hispanic White",1,743,"patient",1,1,1
+"RNA","80-29-0079-2","DP",1,50,"Non-Hispanic White",1,899,"patient",1,1,1
+"RNA","80-29-0076-8","DP",1,37,"Other/Multiracial",1,941,"patient",1,0,1
+"RNA","80-29-0074-3","SOC",1,45,"Other/Multiracial",1,197,"patient",1,1,1
+"RNA","81-29-0092-6","SOC",0,27,"Non-Hispanic White",NA,NA,"patient",1,1,1
+"RNA","80-29-0067-4","SOC",1,49,"Non-Hispanic White",1,291,"patient",1,1,1
+"RNA","80-29-0050-2","DP",1,35,"Hispanic White",1,722,"patient",1,1,1
+"RNA","80-29-0099-8","DP",0,31,"Non-Hispanic White",NA,NA,"patient",1,0,1
+"RNA","80-29-0101-5","DP",1,36,"Non-Hispanic White",1,889,"patient",2,1,1

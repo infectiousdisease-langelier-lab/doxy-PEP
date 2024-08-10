@@ -698,6 +698,7 @@ NMDS_int
 
 ```{r RNA beta diversity Month 6 SOC vs DP}
 
+
 beta_diversity_genes<- RNA_amr %>%
   arrange(ptid) %>%
   filter(visitcode=="Month 6" & num_AMR!=0) %>%
@@ -1712,7 +1713,7 @@ DNA_dpm_table <- DNA_amr %>%
   summarise(abx_dpm = sum(dpm)) %>%
   left_join(DNA_samples %>% select(sample_name, arm, visitcode), by="sample_name") %>%
   pivot_wider(names_from=abx_class, values_from = abx_dpm) %>%
-  pivot_longer(cols = Aminoglycoside:Peptide, names_to = "abx_class", values_to = "abx_dpm") %>%
+  pivot_longer(cols = Aminoglycoside:Glycopeptide, names_to = "abx_class", values_to = "abx_dpm") %>%
   mutate_if(is.numeric, ~replace_na(., 0))
 
 stat.test_byvisit <- DNA_dpm_table %>%

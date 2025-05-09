@@ -65,7 +65,7 @@ metadata<-read.csv("../Inputs/final_samples.csv", header=TRUE)
 
 ddsdp = readRDS("../Inputs/Microbiome/DNA/dds_object_doxy_genus.rds")
 
-reports_filterbg_padj <- read.csv("../Inputs/Microbiome/DNA/microbiome_reports.csv", header=TRUE)
+reports_filterbg_padj <- read.csv("../Inputs/Microbiome/DNA/microbiome_reports_genus.csv", header=TRUE)
 
 reports_filterbg_species_padj <- read.csv("../Inputs/Microbiome/DNA/microbiome_reports_species.csv", header=TRUE)
 
@@ -302,6 +302,7 @@ p<-ggplot(trimmed_4, aes(x=as.character(visitcode), y=`Neisseria gonorrhoeae`, c
   stat_pvalue_manual(stat.test_onlydoxy_ng,  label = "{p_char}", tip.length = 0, size=5)
 p
 
+
 # Chlamydia
 stat.test_onlydoxy_ct <-trimmed_3 %>% 
   filter(arm=="Doxy-PEP") %>% 
@@ -315,6 +316,7 @@ p<-ggplot(trimmed_4, aes(x=as.character(visitcode), y=`Chlamydia trachomatis`, c
   xlab("") + ylab("Chlamydia trachomatis log10(NT RPM)") + labs(color="") +
   stat_pvalue_manual(stat.test_onlydoxy_ct,  label = "{p_char}", tip.length = 0, size=5)
 p
+
 
 # M. genitalium
 stat.test_onlydoxy_mg <-trimmed_3 %>% 
@@ -330,6 +332,7 @@ p<-ggplot(trimmed_4, aes(x=as.character(visitcode), y=`Mycoplasma genitalium`, c
   stat_pvalue_manual(stat.test_onlydoxy_mg,  label = "{p_char}", tip.length = 0, size=5)
 p
 
+
 # C. diff
 stat.test_onlydoxy_cd <-trimmed_3 %>% 
   filter(arm=="Doxy-PEP") %>% 
@@ -343,6 +346,9 @@ p<-ggplot(trimmed_4, aes(x=as.character(visitcode), y=`Clostridioides difficile`
   xlab("") + ylab("Clostridioides difficile log10(NT RPM)") + labs(color="") +
   stat_pvalue_manual(stat.test_onlydoxy_cd,  label = "{p_char}", tip.length = 0, size=5)
 p
+
+
+
 
 ```
 

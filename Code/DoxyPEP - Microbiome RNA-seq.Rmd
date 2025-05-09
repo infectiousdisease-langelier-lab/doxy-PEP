@@ -65,7 +65,7 @@ theme_set(theme_mine())
 metadata<-read.csv("../Inputs/final_samples.csv", header=TRUE)
 meta <-metadata %>% filter(seq=="RNA")
 
-reports_filterbg_padj <- read.csv("../Inputs/Microbiome/RNA/microbiome_reports.csv", header=TRUE)
+reports_filterbg_padj <- read.csv("../Inputs/Microbiome/RNA/microbiome_reports_genus.csv", header=TRUE)
 
 
 ```

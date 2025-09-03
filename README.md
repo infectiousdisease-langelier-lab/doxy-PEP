@@ -5,15 +5,15 @@ This repository contains the code for the paper **Impact of doxycycline post-exp
 ## Code
 
 DoxyPEP - Resistome Main Analysis.Rmd is used to analyze the resistome data and produce manuscript tables 1, figures 2-5, supplemental tables 1-2, and extended data figures 1-4. This code uses the following input files: 
-* [final_AMR.csv](../Inputs/Resistome/final_AMR_0116.csv): antimicrobial resistance genes and the associated metadata detected in the final samples, after QC and background filtering with the negative binomial model. DNA-seq and RNA-seq results are both included, with the "seq" column identifying if the sample was processed using DNA-seq or RNA-seq.
-* [final_samples.csv](../Inputs/final_samples.csv): final samples included in the study after QC
-* [final_metadata.csv](../Inputs/final_metadata.csv): deidentified metadata for all included participants
+* [final_AMR.csv](../Input/Resistome/final_AMR_0116.csv): antimicrobial resistance genes and the associated metadata detected in the final samples, after QC and background filtering with the negative binomial model. DNA-seq and RNA-seq results are both included, with the "seq" column identifying if the sample was processed using DNA-seq or RNA-seq.
+* [final_samples.csv](../Input/final_samples.csv): final samples included in the study after QC
+* [final_metadata.csv](../Input/final_metadata.csv): deidentified metadata for all included participants
 
 DoxyPEP - Microbiome DNA-seq.Rmd is used to make manuscript extended data figure 5a, c, e and 6. It also provides the code for the differential abundance testing. This code uses the following additional input files: 
-* [final_samples.csv](../Inputs/final_samples.csv): final samples included in the study after QC
-* [microbiome_reports.csv](../Inputs/Microbiome/DNA/microbiome_reports.csv): CZID output of the bacterial microbiome (genera-level) data for DNA-sequencing, after background filtering with the negative binomial model
-* [microbiome_reports_species.csv](../Inputs/Microbiome/DNA/microbiome_reports_species.csv): CZID output of the bacterial microbiome (species-level) data for DNA-sequencing, after background filtering with the negative binomial model
-* [dds_object_doxy_genus.rds](../Inputs/Microbiome/DNA/dds_object_doxy_genus.rds): DESeq2 object with the bacterial microbiome data for differential abundance testing
+* [final_samples.csv](../Input/final_samples.csv): final samples included in the study after QC
+* [microbiome_reports.csv](../Input/Microbiome/DNA/microbiome_reports.csv): CZID output of the bacterial microbiome (genera-level) data for DNA-sequencing, after background filtering with the negative binomial model
+* [microbiome_reports_species.csv](../Input/Microbiome/DNA/microbiome_reports_species.csv): CZID output of the bacterial microbiome (species-level) data for DNA-sequencing, after background filtering with the negative binomial model
+* [dds_object_doxy_genus.rds](../Input/Microbiome/DNA/dds_object_doxy_genus.rds): DESeq2 object with the bacterial microbiome data for differential abundance testing
   
 DoxyPEP - Microbiome RNA-seq.Rmd is used to make extended data figure 5b, d, f. This code uses the following additional input files: 
 * [final_samples.csv](../Inputs/final_samples.csv): final samples included in the study after QC

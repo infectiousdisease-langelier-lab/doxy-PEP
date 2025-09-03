@@ -5,7 +5,7 @@ This repository contains the code for the paper **Impact of doxycycline post-exp
 ## Code
 
 DoxyPEP - Resistome Main Analysis.Rmd is used to analyze the resistome data and produce manuscript tables 1, figures 2-5, supplemental tables 1-2, and extended data figures 1-4. This code uses the following input files: 
-* [final_AMR.csv](../Input/Resistome/final_AMR_0116.csv): antimicrobial resistance genes and the associated metadata detected in the final samples, after QC and background filtering with the negative binomial model. DNA-seq and RNA-seq results are both included, with the "seq" column identifying if the sample was processed using DNA-seq or RNA-seq.
+* [final_AMR.csv](Input/Resistome/final_AMR_0116.csv): antimicrobial resistance genes and the associated metadata detected in the final samples, after QC and background filtering with the negative binomial model. DNA-seq and RNA-seq results are both included, with the "seq" column identifying if the sample was processed using DNA-seq or RNA-seq.
 * [final_samples.csv](../Input/final_samples.csv): final samples included in the study after QC
 * [final_metadata.csv](../Input/final_metadata.csv): deidentified metadata for all included participants
 
